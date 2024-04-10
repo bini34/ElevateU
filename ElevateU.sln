@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34707.107
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ElevateU.Server", "ElevateU.Server\ElevateU.Server.csproj", "{21C0F693-4D1D-4094-8A29-154433E214A3}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "elevateu.client", "elevateu.client\elevateu.client.esproj", "{47E63785-4A52-45CD-A1A1-F03727448D2E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{21C0F693-4D1D-4094-8A29-154433E214A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21C0F693-4D1D-4094-8A29-154433E214A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21C0F693-4D1D-4094-8A29-154433E214A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21C0F693-4D1D-4094-8A29-154433E214A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47E63785-4A52-45CD-A1A1-F03727448D2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47E63785-4A52-45CD-A1A1-F03727448D2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47E63785-4A52-45CD-A1A1-F03727448D2E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{47E63785-4A52-45CD-A1A1-F03727448D2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47E63785-4A52-45CD-A1A1-F03727448D2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47E63785-4A52-45CD-A1A1-F03727448D2E}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A5DA3BC1-C049-469E-A44C-EDF77E82D7CA}
+	EndGlobalSection
+EndGlobal
