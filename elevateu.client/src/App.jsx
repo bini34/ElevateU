@@ -10,20 +10,22 @@ function App() {
     return (
         <div>
             <Logo /> 
-            <br />
             <div className='SignInform'>
                <div className='heading-text'>
                  <h1>Welcome Back</h1>
                </div>
                <br />
+
+               <SignInSocialMedia/>
+
+               <br />
+               <Divider>OR</Divider>             
+               <br />
+
                <SigninForm />
                <div className='create-Account'>
                 <p>Don't have an account? <a href="#">Sign Up</a></p>
                </div>
-               <br />
-               <Divider>OR</Divider>              
-               <br />
-               <SignInSocialMedia/>
             </div>
             
         </div>    
