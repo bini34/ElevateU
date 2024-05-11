@@ -2,8 +2,8 @@
 {
     public class Profile
     {
-        public int ProfileID { get; set; }
-        public int UserID { get; set; }
+        public int ProfileId { get; set; }
+        public int UserId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Bio { get; set; }
