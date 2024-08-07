@@ -21,6 +21,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "lib/axios.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "lib/axios.js", "src/app/vv/page.tsx", "tailwind.config.ts", "postcss.config.js"],
   "exclude": ["node_modules"]
 }
