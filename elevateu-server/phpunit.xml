@@ -15,7 +15,18 @@
     <source>
         <include>
             <directory>app</directory>
-        </include>
+
+        "laravel": {
+        "laravel": {        "laravel": {
+        "laravel": {
+        "laravel": {
+        "laravel": {        "laravel": {
+        "laravel": {
+        "laravel": {
+        "laravel": {
+        "laravel": {
+        "laravel": {
+        "laravel": {nclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
