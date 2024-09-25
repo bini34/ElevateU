@@ -3,9 +3,9 @@ import Image from "next/image";
 export default function Signin() {
 
   return (
-    <div className='w-[500px] flex flex-col mx-auto my-5 justify-center gap-3 px-5   xxs:px-15 md:w-[500px]  '>
-       <div className='flex justify-center'>
-          <Image  src="/logo/logo.png" alt="" width={100} height={100}/> 
+    <div className='w-[500px] flex flex-col mx-auto my-5 justify-center  gap-3 px-5   xxs:px-15 md:w-[500px]  '>
+      <div className='flex justify-center'>
+        <Image  src="/logo/logo.png" alt="" width={100} height={100}/> 
       </div>
       <div className='flex flex-col w-full gap-1 mb-4 '>
         <h1 className='text-[40px]'> <span className='text-red-500'>Welcome</span>  <br /> back!</h1>

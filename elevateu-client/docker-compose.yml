@@ -8,6 +8,7 @@ services:
     container_name: ElevateU-Client
     volumes:
       - .:/app
+    user: "${UID}:${GID}"
     ports:
       - "3000:3000"
     networks:
