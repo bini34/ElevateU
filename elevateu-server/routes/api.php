@@ -1,3 +1,5 @@
+
+
 <?php
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
@@ -11,5 +13,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
 });
-
-
+Route::get('/', function () {
+    return "welcome to user route";
+});

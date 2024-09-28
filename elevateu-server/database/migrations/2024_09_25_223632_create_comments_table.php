@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('message_attachments', function (Blueprint $table) {
+        Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('message_id')->constrained('messages');
-            $table->string('name',255);
-            $table->string('path',1024);
-            $table->string('mime',255); // image/png
-            $table->integer('nsize');
+            $table->text('content');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('posts_id')->nullable()->constrained('posts')->onDelete('cascade');;
             $table->timestamps();
         });
     }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('message_attachments');
+        Schema::dropIfExists('comments');
     }
 };
