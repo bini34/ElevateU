@@ -1,6 +1,23 @@
+"use client";
 import Image from "next/image";
+import { useState } from 'react';
+import { useSignIn } from '@/hooks/useSignIn';
+import { FormInput } from "lucide-react";
 
 export default function Signin() {
+  const { signIn, loading, error } = useSignIn();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await signIn(email, password);
+    // Redirect to dashboard or handle login success
+  };
+
+
+
 
   return (
     <div className='w-[500px] flex flex-col mx-auto my-5 justify-center  gap-3 px-5   xxs:px-15 md:w-[500px]  '>
@@ -11,7 +28,7 @@ export default function Signin() {
         <h1 className='text-[40px]'> <span className='text-red-500'>Welcome</span>  <br /> back!</h1>
         <p className='text-[#c7c7c7bb]'>Sign in to unlock your personal growth journey and stay updated with real-time insights.</p>
       </div>
-      <div className='flex flex-col gap-5'>  
+      <form  onSubmit={handleSubmit} className='flex flex-col gap-5'>  
           <div className="relative ">
             <div className="absolute inset-y-0 start-0 flex items-center ps-3.5  pointer-events-none">
               <svg className="w-4 h-4 text-[#C7C7C7]  dark:text-[#C7C7C7]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
@@ -39,7 +56,7 @@ export default function Signin() {
               <a className='text-base text-[#bfdaf9]' href="#"> Forget your password</a>
             </div>
           <button className='bg-red-500 text-lg text-white w-full py-2 rounded-3xl hover:bg-red-400'>Sign In</button>
-      </div>
+      </form>
       <div className="relative flex items-center justify-center w-full">
         <hr className="w-full h-px my-8 bg-gray-200 border-0 dark:bg-[#C7C7C7]"/>
         <span className="absolute px-3 font-medium text-gray-900 bg-white dark:text-gray dark:bg-white left-1/2 transform -translate-x-1/2">or</span>

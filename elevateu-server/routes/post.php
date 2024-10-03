@@ -25,3 +25,7 @@ Route::middleware('auth:api')->group(function () {
     // Search Posts
     Route::get('/posts/search', [PostController::class, 'search']);   // Search for posts
 });
+Route::get('/post', function(){
+    return "Search posts";
+});  // Search for posts
+ 

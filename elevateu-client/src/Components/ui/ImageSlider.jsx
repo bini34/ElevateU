@@ -1,90 +1,109 @@
-"use client"
-import { useState } from "react";
+"use client";
+import Image from 'next/image';
+import { useState } from 'react';
 import x from '../../../public/images/1.jpg';
 import y from '../../../public/images/2.jpg';
+import z from '../../../public/images/3.jpg';
+import i from '../../../public/images/4.jpg';
 
 const SocialMediaPostCarousel = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
 
+  const mediaItems = [
+    { type: 'image', src: x },
+    { type: 'image', src: y },
+    { type: 'image', src: z },
+    { type: 'image', src: i },
 
-  const [isMuted, setIsMuted] = useState(true);
+  ];
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
+  const handleNext = () => {
+    setActiveIndex((prevIndex) => (prevIndex + 1) % mediaItems.length);
   };
 
-  return (
-    <div id="social-media-carousel" className="relative w-full" data-carousel="slide">
-      {/* Carousel Wrapper */}
-      <div className="relative h-64 md:h-96 overflow-hidden rounded-lg">
-        
-        {/* Image Slide 1 */}
-        <div className="hidden duration-700 ease-in-out" data-carousel-item>
-          <img
-            src={x}
-            className="absolute block w-[100px] h-full object-cover"
-            alt="Slide 1"
-          />
-        </div>
-        
-        {/* Video Slide 2 */}
-        {/* <div className="hidden duration-700 ease-in-out" data-carousel-item="active">
-          <video
-            className="absolute block w-full h-full object-cover"
-            muted={isMuted}
-            loop
-            autoPlay
-            src="/path/to/video1.mp4"
-          />
-          <button
-            className="absolute bottom-5 right-5 bg-gray-700 text-white p-2 rounded-full"
-            onClick={toggleMute}
-          >
-            {isMuted ? "Unmute" : "Mute"}
-          </button>
-        </div> */}
-        
-        {/* Image Slide 3 */}
-        <div className="hidden duration-700 ease-in-out" data-carousel-item>
-          <img
-            src={y}
-            className="absolute block w-[100px] h-full object-cover"
-            alt="Slide 2"
-          />
-        </div>
+  const handlePrev = () => {
+    setActiveIndex((prevIndex) =>
+      prevIndex === 0 ? mediaItems.length - 1 : prevIndex - 1
+    );
+  };
 
-        {/* Additional slides here (video or images) */}
+  if (mediaItems.length === 0) {
+    return <p>No media items available.</p>; 
+  }
+
+  return (
+    <div id="social-media-carousel" className="relative w-full rounded-3xl" data-carousel="slide">
+      {/* Carousel Wrapper */}
+      <div className="relative h-auto md:h-96 overflow-hidden rounded-3xl">
+        {mediaItems.map((item, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === activeIndex ? 'block' : 'hidden'}`}
+            data-carousel-item={index === activeIndex ? 'active' : ''}
+          >
+            {item.type === 'image' ? (
+              <Image
+                src={item.src}
+                alt={`Slide ${index + 1}`}
+                fill 
+                className="object-cover"
+              />
+            ) : (
+              <video
+                src={item.src}
+                className="block w-full h-full object-cover"
+                controls
+                autoPlay
+                loop
+                muted
+              />
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Indicators */}
-      <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3">
-        <button type="button" className="w-3 h-3 rounded-full" data-carousel-slide-to="0" aria-label="Slide 1"></button>
-        <button type="button" className="w-3 h-3 rounded-full" data-carousel-slide-to="1" aria-label="Slide 2"></button>
-        <button type="button" className="w-3 h-3 rounded-full" data-carousel-slide-to="2" aria-label="Slide 3"></button>
-      </div>
+      {/* <div className="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3">
+        {mediaItems.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            className={`w-2 h-2 rounded-full ${index === activeIndex ? 'bg-white' : 'bg-gray-300'}`}
+            onClick={() => setActiveIndex(index)}
+            aria-label={`Slide ${index + 1}`}
+          ></button>
+        ))}
+      </div> */}
 
       {/* Controls */}
-      <button
-        type="button"
-        className="absolute top-0 left-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer"
-        data-carousel-prev
-      >
-        <span className="inline-flex items-center justify-center w-10 h-10 bg-white rounded-full">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </span>
-      </button>
-      <button
-        type="button"
-        className="absolute top-0 right-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer"
-        data-carousel-next
-      >
-        <span className="inline-flex items-center justify-center w-10 h-10 bg-white rounded-full">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </span>
-      </button>
+      {activeIndex > 0 && (
+        <button
+          type="button"
+          className="absolute top-[50%] left-0 z-30 flex items-center justify-center  px-2 cursor-pointer"
+          onClick={handlePrev}
+          data-carousel-prev
+        >
+          <span className="inline-flex items-center justify-center w-5 h-5 bg-white bg-opacity-50 rounded-full">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </span>
+        </button>
+      )}
+      {activeIndex < mediaItems.length - 1 && (
+        <button
+          type="button"
+          className="absolute top-[50%] right-0 z-30 flex items-center justify-center  px-2 cursor-pointer"
+          onClick={handleNext}
+          data-carousel-next
+        >
+          <span className="inline-flex items-center justify-center w-5 h-5 bg-white bg-opacity-50 rounded-full">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </button>
+      )}
     </div>
   );
 };

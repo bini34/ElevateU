@@ -13,9 +13,6 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             Route::middleware('auth:api')
                 ->prefix('api')
-                ->group(base_path('routes/user.php'));
-            Route::middleware('auth:api')
-                ->prefix('api')
                 ->group(base_path('routes/post.php'));
             Route::middleware('auth:api')
                 ->prefix('api')

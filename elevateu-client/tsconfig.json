@@ -34,7 +34,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "src/Components/PostCard.jsx", "src/Components/ui/ImageSlider.jsx", "tailwind.config.ts"  ],
+, "src/components/PostCard.jsx", "src/components/ui/ImageSlider.jsx", "tailwind.config.ts", "src/app/chat/page.jsx", "src/app/group/page.jsx", "src/components/Layout.jsx", "src/utils/fetcher.ts"  ],
   "exclude": [
     "node_modules"
   ]

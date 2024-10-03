@@ -11,6 +11,7 @@ services:
     user: "${UID}:${GID}"
     ports:
       - "3000:3000"
+    command: npm run dev
     networks:
       - laravel_network  # Use the same network as Laravel API
     environment:
