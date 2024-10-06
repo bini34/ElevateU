@@ -1,8 +1,12 @@
 import Layout from '@/components/Layout';
 import avator from '../../../public/logo/logo.png';
 import Image from 'next/image';
+import ChatBubble from '../../components/ChatBubble';
+import useChat from '../hooks/useChat';
 
 export default function Chat() {
+  const { messages } = useChat();
+
   return (
     <Layout>
       {/* Header Section */}
@@ -19,8 +23,12 @@ export default function Chat() {
     </header>
     <hr />
 
-      <main className='h-full'>
-
+      <main className='h-full w-full'>
+      <div className="chat-container">
+      {messages.map((msg) => (
+        <ChatBubble key={msg.id} message={msg} />
+      ))}
+    </div>
       </main>
 
       {/* Chat Section */}
