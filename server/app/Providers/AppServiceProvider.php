@@ -12,7 +12,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        Passport::ignoreRoutes();
     }
 
     /**
@@ -20,7 +20,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Passport::hashClientSecrets();
-
+        // Application-specific bootstrapping goes here
     }
 }

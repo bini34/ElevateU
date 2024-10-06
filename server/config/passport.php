@@ -48,7 +48,7 @@ return [
     | Client UUIDs
     |--------------------------------------------------------------------------
     |
-    | By default, Passport uses auto-incrementing primary keys when assigning
+    | By default,y Passport uses auto-incrementing primary keys when assigning
     | IDs to clients. However, if Passport is installed using the provided
     | --uuids switch, this will be set to "true" and UUIDs will be used.
     |
@@ -67,9 +67,10 @@ return [
     |
     */
 
-    'personal_access_client' => [
-        'id' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_ID'),
-        'secret' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET'),
-    ],
+   'personal_access_client' => [
+    'id' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_ID'),
+    'secret' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET'),
+],
+
 
 ];

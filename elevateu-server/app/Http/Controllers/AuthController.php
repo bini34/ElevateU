@@ -35,11 +35,11 @@ class AuthController extends Controller
         $user = Auth::user();
 
         // Generate a token for the user using Passport
-        $token = $user->createToken('Personal Access Token')->accessToken;
+        // $token = $user->createToken('Personal Access Token')->accessToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'user' => $user
+            // 'token' => $token
         ], 200);
     }
 

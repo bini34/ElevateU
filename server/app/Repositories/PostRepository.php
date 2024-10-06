@@ -13,19 +13,31 @@ class PostRepository
         $this->post = $post;
     }
 
-    public function getAll()
+    public function getAllPostsWithDetails($perPage = 10)
     {
-        return $this->post->all();
+        // Eager load likes, comments (with user profiles), and attachments
+        return $this->post->with([
+            'likes',                              // Eager load likes
+            'comments.user.profile',              // Eager load comments with user profile
+            'attachments'                         // Eager load attachments
+        ])->paginate($perPage);
     }
 
-    public function find($id)
+    public function findPostWithDetails($id)
     {
-        return $this->post->findOrFail($id);
+        return $this->post->with([
+            'likes',
+            'comments.user.profile',
+            'attachments'
+        ])->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return $this->post->create($data);
+        $post = $this->post->create($data);
+        \Log::info('repo post ' . $post);
+        return $post;
+
     }
 
     public function update($id, array $data)

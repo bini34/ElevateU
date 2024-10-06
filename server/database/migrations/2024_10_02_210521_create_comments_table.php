@@ -15,12 +15,12 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->text('content');
             $table->uuid('user_id');
-            $table->uuid('posts_id')->nullable();
+            $table->uuid('post_id')->nullable();
             $table->timestamps();
 
             // Foreign key constraints
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('posts_id')->references('id')->on('posts')->onDelete('cascade');
+            $table->foreign('post_id')->references('id')->on('posts')->onDelete('cascade');
         });
     }
 

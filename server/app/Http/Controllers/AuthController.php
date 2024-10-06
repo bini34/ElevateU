@@ -17,28 +17,37 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // Validate the input data
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
-
-        // Attempt to authenticate the user
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
-
-        // Retrieve the authenticated user
-        $user = Auth::user();
-
-        // Generate a token for the user using Passport
-        $token = $user->createToken('Personal Access Token')->accessToken;
-
-        return response()->json([
+        try {
+            // Validate the input data
+            $request->validate([
+                'email' => 'required|string|email',
+                'password' => 'required|string',
+            ]);
+    
+            // Attempt to authenticate the user
+            if (!Auth::attempt($request->only('email', 'password'))) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+    
+            // Retrieve the authenticated user
+            $user = Auth::user();
+            // Generate a token for the user using Passport
+             $token = $user->createToken('Personal Access Token')->accessToken;
+    
+            return response()->json([
             'user' => $user,
             'token' => $token
-        ], 200);
+            ], 200);
+    
+        } catch (\Exception $e) {
+            // Catch any exceptions and return an error message
+            return response()->json([
+                'message' => 'Something went wrong, please try again later.',
+                'error' => $e->getMessage() // Optional: to expose the specific error
+            ], 500);
+        }
     }
+    
 
     public function logout(Request $request)
     {

@@ -2,30 +2,35 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-use Illuminate\Support\Str;
+use App\Traits\GeneratesUuid;
+
+
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, GeneratesUuid;
 
-    /**
-     * Indicates if the IDs are auto-incrementing.
+
+        /**
+     * Disable auto-incrementing as we are using UUID.
      *
      * @var bool
      */
     public $incrementing = false;
 
     /**
-     * The data type of the primary key ID.
+     * Set the data type of the primary key ID to string.
      *
      * @var string
      */
     protected $keyType = 'string';
 
+    
     /**
      * The attributes that are mass assignable.
      *
@@ -50,33 +55,18 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
-
-    /**
-     * Boot function to generate UUID for the model.
-     */
-    protected static function boot()
+    protected function casts(): array
     {
-        parent::boot();
-
-        // Automatically generate UUID for the 'id' field if it's not already set.
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
-            }
-        });
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 
-    /**
-     * Relationship: A user can belong to many groups.
-     */
     public function groups()
     {
         return $this->belongsToMany(Group::class, 'group_users');

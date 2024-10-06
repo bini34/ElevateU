@@ -6,6 +6,8 @@ use Illuminate\Support\Str;
 
 trait GeneratesUuid
 {
+ 
+
     /**
      * Boot function to generate UUID for the model.
      */
@@ -18,17 +20,8 @@ trait GeneratesUuid
         });
     }
 
-    /**
-     * Disable auto-incrementing as we are using UUID.
-     *
-     * @var bool
-     */
-    public $incrementing = false;
 
-    /**
-     * Set the data type of the primary key ID to string.
-     *
-     * @var string
-     */
-    protected $keyType = 'string';
+    
+
+
 }

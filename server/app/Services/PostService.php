@@ -4,76 +4,91 @@ namespace App\Services;
 
 use App\Repositories\PostRepository;
 use App\Repositories\FileAttachmentRepository;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PostService
 {
     protected $postRepository;
     protected $fileAttachmentRepository;
+    
 
     public function __construct(PostRepository $postRepository, FileAttachmentRepository $fileAttachmentRepository)
     {
         $this->postRepository = $postRepository;
         $this->fileAttachmentRepository = $fileAttachmentRepository;
-
     }
 
-    public function getAllPosts()
+
+    public function getAllPostsWithDetails($perPage = 10)
     {
-        return $this->postRepository->getAll();
+        return $this->postRepository->getAllPostsWithDetails($perPage);
     }
 
-    public function getPostById($id)
+    public function getPostByIdWithDetails($id)
     {
-        return $this->postRepository->find($id);
+        return $this->postRepository->findPostWithDetails($id);
     }
-
-    public function createPost(array $data)
+    public function createPost(array $data, $files = [])
     {
-        $post = $this->postRepository->create($data);
+    \Log::info('be post ' . json_encode($data));
 
-        // Step 2: Handle file upload if a file is provided
-        if ($file) {
-            // Step 3: Store the file locally
-            $filePath = $this->storeFile($file);
+    $post = $this->postRepository->create($data);
+    $post->refresh();
+    \Log::info('af post id  ' . $post->id);
 
-            // Step 4: Create file attachment record
-            $this->fileAttachmentRepository->create([
-                'post_id' => $post->id,
-                'name' => $file->getClientOriginalName(),
-                'path' => $filePath,
-                'mime' => $file->getClientMimeType(),
-                'size' => $file->getSize(),
-            ]);
+
+    try {
+        if (is_array($files) && count($files) > 0) {
+            foreach ($files as $file) {
+                // Ensure each file is an instance of UploadedFile
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    \Log::info('Processing file: ' . $file->getClientOriginalName());
+
+                    // Store each file locally
+                    $filePath = $this->storeFile($file);
+                    
+                    // Create file attachment record for each file
+                    $this->fileAttachmentRepository->create([
+                        'post_id' => $post->id,
+                        'name' => $file->getClientOriginalName(),
+                        'path' => $filePath,
+                        'mime' => $file->getClientMimeType(),
+                        'size' => $file->getSize(),
+                    ]);
+                } else {
+                    \Log::error('Invalid file instance.');
+                }
+            }
+        } else {
+            \Log::error('No files provided.');
         }
-        return $post;
+    } catch (\Exception $e) {
+        \Log::error('Error storing files: ' . $e->getMessage());
+
+        return response()->json([
+            'message' => 'Error sending file',
+            'error' => $e->getMessage()
+        ], 400);
     }
 
-    public function updatePost($id, array $data)
-    {
-        return $this->postRepository->update($id, $data);
-    }
+    return $post;
+}
 
-    public function deletePost($id)
-    {
-        return $this->postRepository->delete($id);
-    }
-    public function searchPosts(array $data)
-    {
-        return $this->postRepository->search($data);
-    }
 
-     /**
-     * Store the uploaded file in local storage and return the file path.
-     */
+
     protected function storeFile($file)
     {
-        // Create a unique filename
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-
-        // Store the file in the 'public/uploads' directory using the local driver
-        return Storage::disk('public')->putFileAs('uploads/posts', $file, $filename);
+        try{
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            return Storage::disk('public')->putFileAs('uploads/posts', $file, $filename);
+        }catch(Exception $e)
+        {
+            return response()->json([
+                'message' => 'Error uploading file',
+                'error' => $e->getMessage()
+            ], 400);
+        }
     }
-
 }
