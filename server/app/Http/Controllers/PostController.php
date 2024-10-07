@@ -8,9 +8,11 @@ use App\Http\Requests\StorePostRequest;
 use App\Services\PostService;
 use App\Services\LikeService;
 use App\Services\CommentService;
+use App\Traits\ApiResponse;
 
 class PostController extends Controller
 {
+    use ApiResponse;
 
     protected $postService;
 
@@ -23,45 +25,43 @@ class PostController extends Controller
     {
         $perPage = $request->input('per_page', 10);  // Pagination default
         $posts = $this->postService->getAllPostsWithDetails($perPage);  // Updated service call
-        return response()->json($posts, 200);
+        return $this->successResponse($posts);
     }
-
-  
 
     public function store(StorePostRequest $request): JsonResponse
     {
         $this->postService->createPost($request->all(), $request->file('file'));
-        return response()->json(['message' => "Post created successfully"], 201);
+        return $this->successResponse(['message' => "Post created successfully"], 201);
     }
 
     public function show($id): JsonResponse
     {
         $post = $this->postService->getPostByIdWithDetails($id);  // Updated to include details
-        return response()->json($post, 200);
+        return $this->successResponse($post);
     }
     
     public function update(Request $request, $id): JsonResponse
     {
         $post = $this->postService->updatePost($id, $request->all());
-        return response()->json($post, 200);
+        return $this->successResponse($post);
     }
 
     public function destroy($id): JsonResponse
     {
         $this->postService->deletePost($id);
-        return response()->json(['message' => 'Post deleted successfully'], 200);
+        return $this->successResponse(['message' => 'Post deleted successfully']);
     }
 
     public function userPosts($userId, $page = 1): JsonResponse
     {
         $posts = $this->postService->getUserPosts($userId, $page);
-        return response()->json($posts, 200);
+        return $this->successResponse($posts);
     }
 
     public function search(Request $request): JsonResponse
     {
         $posts = $this->postService->searchPosts($request->all());
-        return response()->json($posts, 200);
+        return $this->successResponse($posts);
     }
 }
 

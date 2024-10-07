@@ -1,11 +1,11 @@
 
 
-export default function Chat() {
+export default function Group() {
 
 
   return (
     <div className="h-full w-full flex items-center justify-center">
-      <h1>Chat</h1>
+      <h1>Select a chat to start a Message</h1>
     </div>
   );
 }

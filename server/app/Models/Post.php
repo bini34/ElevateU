@@ -48,7 +48,7 @@ class Post extends Model
     {
         return $this->hasMany(Like::class);
     }
-
+ 
     // Define relationship to comments
     public function comments()
     {

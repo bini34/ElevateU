@@ -1,25 +1,26 @@
-// hooks/useRegister.ts
+"use client";
 import { useState } from 'react';
 import { fetcher } from '../utils/fetcher';
 
 export const useRegister = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
-  const register = async (username:string, email: string, password: string) => {
+  const register = async (user_name, email, password) => {
     setLoading(true);
     setError(null);
 
     try {
       const data = await fetcher('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
+        method: 'post',
+        body: JSON.stringify({ user_name, email, password }), // Include username
       });
+      console.log("data from sign up hooks" + data);
 
       // Handle successful registration, like redirecting or storing user details
       return data;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err.response.data || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

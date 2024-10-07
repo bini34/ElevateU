@@ -39,6 +39,12 @@ services:
       - laravel-app
     networks:
       - laravel_network
+  frontend:
+    image: your-frontend-image
+    environment:
+      - NEXT_PUBLIC_API_URL=http://laravel-app:8080/ # Use the service name 'laravel-app'
+    # other configurations...
+
 networks:
   laravel_network: {}
 

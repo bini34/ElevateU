@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\GroupService;
 use Illuminate\Http\JsonResponse;
+use App\Traits\ApiResponse;
 
 class GroupController extends Controller
 {
+    use ApiResponse;
+
     protected $groupService;
 
     public function __construct(GroupService $groupService)
@@ -21,14 +24,14 @@ class GroupController extends Controller
         $groupData = $request->all();
         $group = $this->groupService->createGroup($groupData);
 
-        return response()->json($group, 201);
+        return $this->successResponse($group, 201);
     }
 
     // Show a specific group
     public function show($id): JsonResponse
     {
         $group = $this->groupService->getGroupById($id);
-        return response()->json($group, 200);
+        return $this->successResponse($group);
     }
 
     // Update a group
@@ -36,14 +39,14 @@ class GroupController extends Controller
     {
         $groupData = $request->all();
         $group = $this->groupService->updateGroup($id, $groupData);
-        return response()->json($group, 200);
+        return $this->successResponse($group);
     }
 
     // Delete a group
     public function destroy($id): JsonResponse
     {
         $this->groupService->deleteGroup($id);
-        return response()->json(['message' => 'Group deleted successfully'], 200);
+        return $this->successResponse(['message' => 'Group deleted successfully']);
     }
 
     // Add a user to the group
@@ -51,7 +54,7 @@ class GroupController extends Controller
     {
         $userId = $request->input('user_id');
         $this->groupService->addUserToGroup($groupId, $userId);
-        return response()->json(['message' => 'User added to group successfully'], 201);
+        return $this->successResponse(['message' => 'User added to group successfully'], 201);
     }
 
     // Remove a user from the group
@@ -59,6 +62,6 @@ class GroupController extends Controller
     {
         $userId = $request->input('user_id');
         $this->groupService->removeUserFromGroup($groupId, $userId);
-        return response()->json(['message' => 'User removed from group successfully'], 200);
+        return $this->successResponse(['message' => 'User removed from group successfully']);
     }
 }

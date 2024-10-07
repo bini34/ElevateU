@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use App\Services\UserService;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
+use App\Traits\ApiResponse;
 
 class UserController extends Controller
 {
+    use ApiResponse;
+
     protected $userService;
 
     public function __construct(UserService $userService)
@@ -22,10 +25,10 @@ class UserController extends Controller
         $user = $this->userService->getUserById($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return $this->errorResponse('User not found', 404);
         }
 
-        return response()->json($user, 200);
+        return $this->successResponse($user);
     }
 
     // Store a new user
@@ -47,16 +50,16 @@ class UserController extends Controller
 
             // Check if user creation was successful
             if (!$user) {
-                return response()->json(['message' => 'User not created'], 500);
+                return $this->errorResponse('User not created', 500);
             }
 
-            return response()->json($user, 201);
+            return $this->successResponse($user, "Success", 201);
         } catch (ValidationException $e) {
             // Handle validation exceptions
-            return response()->json(['message' => 'User creation failed', 'errors' => $e->errors()], 422);
+            return $this->errorResponse('User creation failed', 422);
         } catch (\Exception $e) {
             // Handle other exceptions
-            return response()->json(['message' => 'An unexpected error occurred', 'error' => $e->getMessage()], 500);
+            return $this->errorResponse('An unexpected error occurred', 500);
         }
     }
 }

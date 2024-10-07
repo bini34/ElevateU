@@ -14,7 +14,7 @@ Route::get('/{provider}/callback', [AuthController::class, 'handleProviderCallba
 
 // Authentication Routes
 Route::post('/auth/register', [UserController::class, 'store']);
-Route::get('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Protected Routes (Only accessible for authenticated users)
 Route::middleware('auth:api')->group(function () {

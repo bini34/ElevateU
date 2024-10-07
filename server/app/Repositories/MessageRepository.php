@@ -5,9 +5,10 @@ namespace App\Repositories;
 use App\Models\Message;
 
 class MessageRepository
+
 {
     protected $message;
-
+    
     public function __construct(Message $message)
     {
         $this->message = $message;
@@ -24,6 +25,7 @@ class MessageRepository
             $query->select('user_id', 'first_name', 'last_name', 'profile_picture_url');
         }])->findOrFail($id);
     }
+     
 
     public function getMessagesByConversationPaginated($conversationId, $perPage = 10)
     {

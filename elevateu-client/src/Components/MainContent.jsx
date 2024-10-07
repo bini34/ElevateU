@@ -1,21 +1,8 @@
 import { useState } from "react";
 import Image from "next/image";
 
-interface Content {
-  type: string;
-  src?: string;
-  caption?: string;
-  text?: string;
-}
-
-interface Post {
-  id: number;
-  username: string;
-  content: Content;
-}
-
 const MainContent = () => {
-  const [posts] = useState<Post[]>([
+  const [posts] = useState([
     {
       id: 1,
       username: "Jane Doe",
@@ -63,12 +50,7 @@ const MainContent = () => {
   );
 };
 
-interface PostCardProps {
-  username: string;
-  content: Content;
-}
-
-const PostCard = ({ username, content }: PostCardProps) => {
+const PostCard = ({ username, content }) => {
   return (
     <div className="bg-white w-[100px] rounded-lg shadow-md overflow-hidden">
       <div className="p-4 flex items-center">

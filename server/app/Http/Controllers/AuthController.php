@@ -5,9 +5,12 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\ApiResponse;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+
     protected $authService;
 
     public function __construct(AuthService $authService)
@@ -34,17 +37,14 @@ class AuthController extends Controller
             // Generate a token for the user using Passport
              $token = $user->createToken('Personal Access Token')->accessToken;
     
-            return response()->json([
+            return $this->successResponse([
             'user' => $user,
             'token' => $token
             ], 200);
     
         } catch (\Exception $e) {
             // Catch any exceptions and return an error message
-            return response()->json([
-                'message' => 'Something went wrong, please try again later.',
-                'error' => $e->getMessage() // Optional: to expose the specific error
-            ], 500);
+            return $this->errorResponse('Something went wrong, please try again later.', 500);
         }
     }
     
@@ -54,7 +54,7 @@ class AuthController extends Controller
         // Use the service to handle the logout
         $this->authService->logout($request->user());
 
-        return response()->json(['message' => 'Successfully logged out'], 200);
+        return $this->successResponse(['message' => 'Successfully logged out'], 200);
     }
     public function handleProviderCallback($provider)
     {
@@ -73,9 +73,9 @@ class AuthController extends Controller
 
             $token = $user->createToken('API Token')->accessToken;
 
-            return response()->json(['token' => $token], 200);
+            return $this->successResponse(['token' => $token], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Authentication failed'], 400);
+            return $this->errorResponse('Authentication failed', 400);
         }
     }
 }
