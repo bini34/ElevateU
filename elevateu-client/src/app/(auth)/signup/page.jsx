@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 
 export default function Signup() {
   const { register, loading, error } = useRegister();
-  const [user_name, setUsername] = useState('');
+  const [firstName, setFirstName] = useState(''); // Changed from user_name to firstName
+  const [lastName, setLastName] = useState(''); // Added lastName state
+  const [username, setUsername] = useState(''); // Added username state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,7 +19,7 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!user_name || !email || !password || !confirmPassword) {
+    if (!username || !firstName || !lastName || !email || !password || !confirmPassword) { // Updated to include username
       setFormError('All fields are required.');
       return;
     }
@@ -31,8 +33,9 @@ export default function Signup() {
     setFormError('');
 
     try {
-      const data = await register(user_name, email, password);
-      if (data && data.success) {
+      const data = await register(username, firstName, lastName, email, password, confirmPassword); // Updated to send username
+      console.log("data from signup form", data);
+      if (data && data.status === "success") {
         router.push('/');
       }
     } catch (err) {
@@ -50,13 +53,32 @@ export default function Signup() {
         <p className='text-[#c7c7c7bb]'>Join our community to share your stories, connect with like-minded friends, and express your thoughts!</p>
       </div>
       <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
-        <div className="relative">
+      <div className="flex gap-2 xxs:flex-col">
+
+      <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
             <svg className="w-6 h-6 text-[#C7C7C7] dark:text-[#C7C7C7] align-middle" aria-hidden="true" fill="currentColor" viewBox="0 0 20 16">
               <image href="/icons/user.svg" height="100%" width="100%" />
             </svg>
           </div>
-          <input type="text" id="username" value={user_name} onChange={(e) => setUsername(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Enter your user name"/>
+          <input type="text" id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your First Name"/>
+        </div>
+      <div className="relative">
+          <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+            <svg className="w-6 h-6 text-[#C7C7C7] dark:text-[#C7C7C7] align-middle" aria-hidden="true" fill="currentColor" viewBox="0 0 20 16">
+              <image href="/icons/user.svg" height="100%" width="100%" />
+            </svg>
+          </div>
+          <input type="text" id="last" value={lastName} onChange={(e) => setLastName(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your last Name"/>
+        </div>
+      </div>
+      <div className="relative">
+          <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+            <svg className="w-6 h-6 text-[#C7C7C7] dark:text-[#C7C7C7] align-middle" aria-hidden="true" fill="currentColor" viewBox="0 0 20 16">
+              <image href="/icons/user.svg" height="100%" width="100%" />
+            </svg>
+          </div>
+          <input type="text" id="lastName" value={username} onChange={(e) => setUsername(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your User Name"/>
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">

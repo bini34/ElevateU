@@ -50,7 +50,7 @@ export default function GroupChat({ children }) { // Added children as a prop
   return (
     <Layout>
       <div className="flex flex-col md:flex-row w-full min-h-screen rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 border-solid border-black bg-slate-300">
-        <div className="flex flex-col gap-8 max-h-screen w-full md:w-[300px] pt-20 pb-20 pl-3">
+        <div className="flex flex-col gap-8 max-h-screen w-full md:w-[300px] pt-20 pb-20 ">
           <div className="flex-1 flex-col  gap-4 overflow-y-auto no-scrollbar">
             <GroupChatList groups={groups} />
           </div>

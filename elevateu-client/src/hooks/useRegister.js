@@ -6,14 +6,14 @@ export const useRegister = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const register = async (user_name, email, password) => {
+  const register = async (first_name, last_name, user_name, email, password, password_confirmation) => {
     setLoading(true);
     setError(null);
 
     try {
       const data = await fetcher('/api/auth/register', {
         method: 'post',
-        body: JSON.stringify({ user_name, email, password }), // Include username
+        body: JSON.stringify({first_name, last_name, user_name, email, password, password_confirmation }), // Include username
       });
       console.log("data from sign up hooks" + data);
 

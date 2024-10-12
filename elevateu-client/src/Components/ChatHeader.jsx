@@ -3,8 +3,8 @@ import avator from '../../public/logo/logo.png';
 
 function ChatHeader() {
     return (
-        <header className="relative top-0 right-0 left-0 py-5 px-7 w-full">
-            <div className="flex items-center gap-4 w-full">
+        <header className="relative top-0 right-0 left-0 px-7 w-full border-b border-gray-300 dark:border-gray-700 pb-5 shadow-md">
+            <div className="flex items-center gap-4 w-full border-b border-gray-300 dark:border-gray-700">
                 <div className="relative">
                     <Image className="rounded-full" width={40} height={40} src={avator} alt="avatar" />
                 </div>
@@ -15,6 +15,7 @@ function ChatHeader() {
             </div>
         </header>
     );
+
 }
 
 export default ChatHeader;

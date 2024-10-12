@@ -36,9 +36,12 @@ class UserController extends Controller
     {
         // Validation rules
         $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'user_name' => 'required|string|max:255|unique:users,user_name',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:6'
+            
         ]);
 
         // Hash password before creating the user

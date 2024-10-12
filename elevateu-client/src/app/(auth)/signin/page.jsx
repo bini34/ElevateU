@@ -18,7 +18,7 @@ export default function Signin() {
     try {
       const data = await signIn(email, password);
       console.log('SignIn response:', data); // Debugging log
-      if (data && data.success) {
+      if (data && data.status === "success") {
         router.push('/');
       }
     } catch (err) {

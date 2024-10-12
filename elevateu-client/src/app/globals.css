@@ -31,3 +31,9 @@ body {
     display: none;
   }
 }
+
+.custom-input:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
