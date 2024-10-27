@@ -18,9 +18,9 @@ class GroupFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->company,  // More appropriate for a group name
+            'name' => $this->faker->company,
             'description' => $this->faker->sentence,
-            'owner_id' => User::factory(),  // Generate a new user or use an existing one
+            'owner_id' => User::factory(),
         ];
     }
 }

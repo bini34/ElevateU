@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Services\MessageService;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use App\Events\MessageSent;
+
 
 class MessageController extends Controller
 {
+
     use ApiResponse;
 
-    protected $messageService;
+    protected $messageService ;
 
     public function __construct(MessageService $messageService)
     {
@@ -24,7 +27,9 @@ class MessageController extends Controller
         $files = $request->file('files');  // Handle file uploads if any
         $message = $this->messageService->createMessage($messageData, $files);
 
-        return $this->successResponse($message, 201);
+        broadcast(new MessageSent($message))->toOthers();
+
+        return $this->successResponse('Message sent successfully', 201);
     }
 
     public function show($id): JsonResponse
@@ -33,13 +38,20 @@ class MessageController extends Controller
         return $this->successResponse($message);
     }
 
-    public function getMessagesByConversation(Request $request, $conversationId): JsonResponse
+    public function getMessageCards($userId)
     {
-        $perPage = $request->input('per_page', 10); // Default pagination to 10
-        $messages = $this->messageService->getMessagesByConversationPaginated($conversationId, $perPage);
-        return $this->successResponse($messages);
+        $messageCards = $this->messageService->getUserConversations($userId);
+
+        return response()->json($messageCards);
     }
 
+    public function getMessagesByConversation($conversationId, Request $request)
+    {
+        $perPage = $request->input('per_page', 10); // Default to 10 if not provided
+        $messages = $this->messageService->getMessagesByConversationPaginated($conversationId, $perPage);
+
+        return response()->json($messages);
+    }
     public function getMessagesByGroup(Request $request, $groupId): JsonResponse
     {
         $perPage = $request->input('per_page', 10); // Default pagination to 10

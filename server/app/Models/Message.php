@@ -47,7 +47,8 @@ class Message extends Model
         return $this->belongsTo(Conversation::class, 'conversation_id');
     }
 
-    public function attachment(){
-        return $this->hasMany(MessageAttachment::class);
+    public function fileAttachments()
+    {
+        return $this->hasMany(FileAttachment::class, 'message_id');
     }
 }

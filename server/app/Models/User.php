@@ -71,4 +71,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Group::class, 'group_users');
     }
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class, 'user_id');
+    }
 }

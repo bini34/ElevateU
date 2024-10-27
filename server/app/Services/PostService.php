@@ -80,11 +80,17 @@ class PostService
 
     protected function storeFile($file)
     {
-        try{
+        try {
             $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            return Storage::disk('public')->putFileAs('uploads/posts', $file, $filename);
-        }catch(Exception $e)
-        {
+            $filePath = Storage::disk('public')->putFileAs('uploads/posts', $file, $filename);
+            
+            // Generate a URL for the stored file
+            $fileUrl = Storage::url($filePath);
+
+            return $fileUrl;
+        } catch (\Exception $e) {
+            \Log::error('Error uploading file: ' . $e->getMessage());
+
             return response()->json([
                 'message' => 'Error uploading file',
                 'error' => $e->getMessage()

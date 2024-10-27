@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Group;
+use App\Models\GroupUser;
 
 class GroupRepository
 {
@@ -39,5 +40,20 @@ class GroupRepository
         $group = $this->find($id);
         $group->delete();
         return true;
+    }
+
+    // Find groups by user ID
+    public function findGroupsByUserId($userId)
+    {
+        return Group::join('group_users', 'groups.id', '=', 'group_users.group_id')
+            ->leftJoin('messages', 'groups.last_message_id', '=', 'messages.id')
+            ->where('group_users.user_id', $userId)
+            ->get([
+                'groups.id',
+                'groups.name',
+                'groups.created_at',
+                'groups.profile_picture',
+                'messages.message as last_message'
+            ]);
     }
 }

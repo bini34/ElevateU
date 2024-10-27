@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-use Laravel\Socialite\Facades\Socialite;
+
 use Illuminate\Http\Request;
 use App\Services\AuthService;
-use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -18,64 +18,53 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
+    public function register(Request $request)
+    {
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'user_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors(), 400);
+        }
+
+        // Call the register method from AuthService
+        $user = $this->authService->register($request->all());
+
+        // Create a token for the user
+        $token = $user->createToken('Personal Access Token')->accessToken;
+
+        // Return success response with user data and token
+        return $this->successResponse(['user' => $user, 'token' => $token], "User registered successfully", 201);
+    }
+
     public function login(Request $request)
     {
-        try {
-            // Validate the input data
-            $request->validate([
-                'email' => 'required|string|email',
-                'password' => 'required|string',
-            ]);
-    
-            // Attempt to authenticate the user
-            if (!Auth::attempt($request->only('email', 'password'))) {
-                return response()->json(['message' => 'Invalid credentials'], 401);
-            }
-    
-            // Retrieve the authenticated user
-            $user = Auth::user();
-            // Generate a token for the user using Passport
-             $token = $user->createToken('Personal Access Token')->accessToken;
-    
-            return $this->successResponse([
-            'user' => $user,
-            'token' => $token
-            ], 200);
-    
-        } catch (\Exception $e) {
-            // Catch any exceptions and return an error message
-            return $this->errorResponse('Something went wrong, please try again later.', 500);
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
+            'password' => 'required|string|min:8',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors(), 400);
         }
-    }
-    
 
-    public function logout(Request $request)
-    {
-        // Use the service to handle the logout
-        $this->authService->logout($request->user());
+        // Call the login method from AuthService
+        $result = $this->authService->login($request->all());
 
-        return $this->successResponse(['message' => 'Successfully logged out'], 200);
-    }
-    public function handleProviderCallback($provider)
-    {
-        try {
-            $socialUser = Socialite::driver($provider)->stateless()->user();
-            $user = User::where('email', $socialUser->getEmail())->first();
-
-            if (!$user) {
-                $user = User::create([
-                    'name' => $socialUser->getName(),
-                    'email' => $socialUser->getEmail(),
-                    $provider . '_id' => $socialUser->getId(),
-                    'avatar' => $socialUser->getAvatar(),
-                ]);
-            }
-
-            $token = $user->createToken('API Token')->accessToken;
-
-            return $this->successResponse(['token' => $token], 200);
-        } catch (\Exception $e) {
-            return $this->errorResponse('Authentication failed', 400);
+        // Check if the login was unsuccessful
+        if ($result instanceof \Illuminate\Http\JsonResponse && $result->getStatusCode() === 401) {
+            return $this->errorResponse($result->getData()->error, $result->getStatusCode());
         }
+
+        // Create a token for the user
+        $token = $result->createToken('Personal Access Token')->accessToken;
+
+        // Return success response with user data and token
+        return $this->successResponse(['user' => $result, 'token' => $token], "User logged in successfully");
     }
 }

@@ -54,12 +54,15 @@ class MessageFactory extends Factory
                 $receiverId = $this->faker->randomElement($userIds);
             } while ($receiverId === $senderId);  // Ensure receiver is not the sender
 
-            // We are not creating or looking up the conversation here
+            // Create or find the conversation
+            $conversation = Conversation::factory()->create();
+
+
             return [
                 'sender_id' => $senderId,
                 'receiver_id' => $receiverId,  // P2P message has a receiver
                 'group_id' => null,  // No group ID for P2P messages
-                'conversation_id' => null,  // We’ll handle the conversation assignment elsewhere
+                'conversation_id' => $conversation->id,  // Assign the conversation ID
                 'message' => $this->faker->realText(200),
                 'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
                 'updated_at' => now(),

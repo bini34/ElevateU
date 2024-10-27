@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\GroupService;
 use Illuminate\Http\JsonResponse;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\Validator;
 
 class GroupController extends Controller
 {
@@ -21,8 +22,25 @@ class GroupController extends Controller
     // Create a new group
     public function store(Request $request): JsonResponse
     {
+        // Define validation rules
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|unique:groups,name',
+            'description' => 'nullable|string',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'owner_id' => 'required|exists:users,id', // Ensure owner_id exists in users table
+        ]);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422); // 422 Unprocessable Entity
+        }
+
         $groupData = $request->all();
-        $group = $this->groupService->createGroup($groupData);
+        $profilePicture = $request->file('profile_picture');
+
+        $group = $this->groupService->createGroup($groupData, $profilePicture);
 
         return $this->successResponse($group, 201);
     }
@@ -63,5 +81,12 @@ class GroupController extends Controller
         $userId = $request->input('user_id');
         $this->groupService->removeUserFromGroup($groupId, $userId);
         return $this->successResponse(['message' => 'User removed from group successfully']);
+    }
+
+    // List groups a user has joined
+    public function listUserGroups($userId): JsonResponse
+    {
+        $groups = $this->groupService->getUserGroups($userId);
+        return $this->successResponse($groups);
     }
 }

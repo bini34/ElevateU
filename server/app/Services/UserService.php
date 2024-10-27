@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Repositories\UserRepository;
 use App\Repositories\ProfileRepository;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+
 class UserService
 {
     protected $userRepository;
@@ -35,6 +38,28 @@ class UserService
         return $user;
     }
     
-    // Method to send data to the profile (you may need to implement this
 
+    public function register(array $data)
+    {
+        // Create the user
+        return $this->userRepository->create($data);
+    }
+
+    public function login(array $data)
+    {
+        // Validate login credentials
+        $user = $this->userRepository->findByEmail($data['email']);
+
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            return ['error' => 'Invalid email or password'];
+        }
+
+        // Generate token
+        $token = $user->createToken('YourAppName')->plainTextToken;
+
+        return [
+            'user' => $user,
+            'token' => $token,
+        ];
+    }
 }

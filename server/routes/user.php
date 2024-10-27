@@ -13,11 +13,11 @@ Route::get('/{provider}/redirect', [AuthController::class, 'redirectToProvider']
 Route::get('/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
 
 // Authentication Routes
-Route::post('/auth/register', [UserController::class, 'store']);
+Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Protected Routes (Only accessible for authenticated users)
-Route::middleware('auth:api')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
 });

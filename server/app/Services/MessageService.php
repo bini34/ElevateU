@@ -48,14 +48,12 @@ class MessageService
         Log::info('after conversation id message: ' . json_encode($data));
 
 
-        // Now store the message
+        // Store the message
         $message = $this->messageRepository->create($data);
         $message->refresh();
 
-        // If it's a P2P message, update the conversation's last message ID
-        if (isset($data['conversation_id'])) {
-            $this->conversationRepository->updateLastMessageId($data['conversation_id'], $message->id);
-        }
+        // Initialize an array to hold file attachment data
+        $fileAttachments = [];
 
         // Handle file attachments if any
         try {
@@ -63,13 +61,15 @@ class MessageService
                 foreach ($files as $file) {
                     if ($file instanceof \Illuminate\Http\UploadedFile) {
                         $filePath = $this->storeFile($file);
-                        $this->fileAttachmentRepository->create([
+                        $fileAttachment = $this->fileAttachmentRepository->create([
                             'message_id' => $message->id,
                             'name' => $file->getClientOriginalName(),
                             'path' => $filePath,
                             'mime' => $file->getClientMimeType(),
                             'size' => $file->getSize(),
                         ]);
+                        // Add the file attachment to the array
+                        $fileAttachments[] = $fileAttachment;
                     }
                 }
             }
@@ -81,7 +81,11 @@ class MessageService
             ], 400);
         }
 
-        return $message;
+        // Return both the message and the file attachments
+        return [
+            'message' => $message,
+            'file_attachments' => $fileAttachments
+        ];
     }
 
     public function getMessageById($id)
@@ -97,6 +101,11 @@ class MessageService
     public function getMessagesByGroupPaginated($groupId, $perPage = 10)
     {
         return $this->messageRepository->getMessagesByGroupPaginated($groupId, $perPage);
+    }
+
+    public function getUserConversations($userId)
+    {
+        return $this->messageRepository->getUserConversations($userId);
     }
 
     protected function storeFile($file)

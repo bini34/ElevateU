@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
+use App\Models\Conversation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,8 +18,18 @@ class ConversationFactory extends Factory
      */
     public function definition(): array
     {
+        // Fetch valid user IDs
+        $userIds = User::pluck('id')->toArray();
+
+        // Ensure we pick two different users
+        $userId1 = $this->faker->randomElement($userIds);
+        do {
+            $userId2 = $this->faker->randomElement($userIds);
+        } while ($userId2 === $userId1);
+
         return [
-            //
+            'user_id1' => min($userId1, $userId2),
+            'user_id2' => max($userId1, $userId2),
         ];
     }
 }

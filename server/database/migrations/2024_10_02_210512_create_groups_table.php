@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->longText('description')->nullable();
+            $table->string('profile_picture')->nullable();
             $table->uuid('owner_id');
             $table->timestamps();
 
@@ -25,7 +26,6 @@ return new class extends Migration
 
         // Create the 'group_users' table
         Schema::create('group_users', function (Blueprint $table) {
-            $table->uuid('id')->primary();
             $table->uuid('group_id');
             $table->uuid('user_id');
             $table->timestamps();

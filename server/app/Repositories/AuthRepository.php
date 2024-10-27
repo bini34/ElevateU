@@ -3,18 +3,21 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class AuthRepository
 {
-    public function login(array $data)
+    public function create(array $data)
     {
-        // Find the user by email
-        return User::where('email', $data['email'])->first();
+        return User::create([
+            'user_name' => $data['user_name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+        ]);
     }
 
-    public function logout($user)
+    public function findByEmail(string $email)
     {
-        // Revoke the current user's access token to logout
-        return $user->token()->revoke();
+        return User::where('email', $email)->first();
     }
 }

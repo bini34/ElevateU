@@ -24,4 +24,9 @@ class ProfileRepository
 
         return null; // or throw an exception if preferred
     }
+
+    public function getProfileByUserId($userId)
+    {
+        return Profile::where('user_id', $userId)->first(['first_name', 'last_name', 'profile_picture_URL']);
+    }
 }
