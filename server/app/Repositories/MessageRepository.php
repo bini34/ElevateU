@@ -46,7 +46,9 @@ class MessageRepository
         return $this->message->where('group_id', $groupId)
             ->with(['sender.profile' => function ($query) {
                 $query->select('user_id', 'first_name', 'last_name', 'profile_picture_url');
-            }])
+            },
+            'fileAttachments'
+            ])
             ->orderBy('created_at', 'asc')
             ->paginate($perPage);
     }

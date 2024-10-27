@@ -1,43 +1,91 @@
 "use client"
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useContext } from 'react';
 import ChatHeader from "@/components/ChatHeader";
 import ChatTextBox from "@/components/ui/ChatTextBox";
 import ChatBubble from "@/components/ChatBubble";
 import ChatBubbleOutgoing from "@/components/ChatBubbleOutgoing";
-import useFetchData from '@/hooks/useFetchData'; // Import the custom hook
+import useFetchData from '@/hooks/useFetchData';
+import avatar from '../../../../public/images/avator.png';
+import { useData } from '@/context/DataContext';
+import { AuthContext } from '@/context/AuthContext';
 
-function ChatPage({ userId }) { // Accept userId as a prop
+function GroupChatPage() {
 	const messagesEndRef = useRef(null);
-	const groupId = 1; // Example conversation ID
-	const { data: chatData, loading, error } = useFetchData(`/conversations/${conversationId}/messages`); // Use the hook
+	const { authUser } = useContext(AuthContext);
+	const { data: group } = useData();
+	const [chatData, setChatData] = useState({ data: [], loading: false, error: null });
+	const { data: responseData, loading, error } = useFetchData(`/api/groups/${group.id}/messages`);
 
-	// Scroll to the bottom of the chat when the component mounts or updates
 	useEffect(() => {
-		console.log("chatData from chat page", chatData)
+		if (responseData) {
+			setChatData({
+				data: responseData.data.data || [],
+				loading,
+				error
+			});
+		}
+	}, [responseData, loading, error]);
+
+	useEffect(() => {
+		console.log("Group Chat Data:", chatData);
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, [chatData]);
 
-	if (loading) return <div>Loading...</div>; // Display loading state
-	if (error) return <div>Error: {error}</div>; // Display error state
-	console.log("chatData from chat page", chatData)
+	const handleNewMessage = (newMessage) => {
+		setChatData((prevChatData) => ({
+			...prevChatData,
+			data: [...prevChatData.data, newMessage],
+		}));
+	};
+
+	if (chatData.loading) return <div>Loading...</div>;
+	if (chatData.error) return <div>Error: {chatData.error}</div>;
 
 	return (
 		<div className="flex flex-col h-screen">
-			<ChatHeader />
-			<div className="flex-1 overflow-y-auto p-4 pb-10"> {/* Adjusted bottom padding */}
-				{chatData.map((msg) =>
-					msg.senderId === userId ? ( 
-						<ChatBubbleOutgoing key={msg.id} message={msg} />
+			<header>
+				<ChatHeader />
+			</header>
+			<main className="flex-1 flex flex-col gap-4 overflow-y-auto p-4 pb-10">
+				{loading ?
+				 <p className="text-center">Loading...</p> : 
+				 error ? <p className="text-center">Error: {error}</p> : 
+				 chatData.data.length === 0 ? 
+				 <p className="text-center">There is no message in this group</p> : 
+				 chatData.data.map((msg) =>
+					msg.senderId === authUser.id ? (
+						<ChatBubbleOutgoing 
+							key={msg.id} 
+							message={{
+								id: msg.id,
+								content: msg.message,
+								senderName: msg.sender.user_name,
+								avatar: msg.sender.profile.profile_picture_url,
+								time: new Date(msg.created_at).toLocaleTimeString(),
+								status: msg.status || 'Sent',
+								type: 'text'
+							}} 
+						/>
 					) : (
-						<ChatBubble key={msg.id} message={msg} />
+						<ChatBubble 
+							key={msg.id} 
+							message={{
+								id: msg.id,
+								content: msg.message,
+								senderName: msg.sender.user_name,
+								avatar: msg.sender.profile.profile_picture_url || avatar,
+								time: new Date(msg.created_at).toLocaleTimeString(),
+								status: 'Received',
+								type: 'text'
+							}} 
+						/>
 					)
 				)}
-				{/* Dummy div to ensure scrolling to the bottom */}
 				<div ref={messagesEndRef} />
-			</div>
-			<ChatTextBox chatType="group" id={groupId}/>
+			</main>
+				<ChatTextBox chatType={{ chatType: "group" }} id={group.id} onNewMessage={handleNewMessage} />
 		</div>
 	);
 }
 
-export default ChatPage;
+export default GroupChatPage;

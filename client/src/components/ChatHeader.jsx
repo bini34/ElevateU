@@ -1,12 +1,11 @@
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 import avatar from '../../public/images/avator.png';
-import { getUser } from '@/utils/auth';
 import { useData } from '@/context/DataContext';
 
 function ChatHeader() {
  // Run only once on component mount
  const { data: user } = useData();
+ console.log("user from chat header", user?.Group)
 
 
     return (
@@ -17,13 +16,13 @@ function ChatHeader() {
                         className="rounded-full" 
                         width={40} 
                         height={40} 
-                        src={user && user.profile_picture_url ? user.profile_picture_url : avatar} 
+                        src={user?.profile_picture_url || avatar} 
                         alt="avatar" 
                     />
                 </div>
                 <div className="font-medium dark:text-white hide-on-100px">
                     <div className="font-bold">
-                        {user ? `${user.first_name} ${user.last_name}` : 'Guest User'}
+                        {user?.Group?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim()}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                         Last seen recently

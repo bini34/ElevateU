@@ -37,5 +37,5 @@ export const useGroup = () => {
     }
   };
 
-  return { post, loading, error };
+  return { Group, loading, error };
 };

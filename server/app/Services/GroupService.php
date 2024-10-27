@@ -23,8 +23,10 @@ class GroupService
     public function createGroup(array $data, $profilePicture = null)
     {
         if ($profilePicture instanceof \Illuminate\Http\UploadedFile) {
+            Log::info('Profile picture received: ' . $profilePicture->getClientOriginalName());
             $filePath = $this->storeFile($profilePicture);
             $data['profile_picture'] = $filePath;
+            Log::info('Profile picture path: ' . $filePath);
         }
 
         Log::info('Creating group: ' . json_encode($data));

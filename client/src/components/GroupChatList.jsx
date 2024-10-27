@@ -5,9 +5,11 @@ import Link from 'next/link';
 import avator from '../../public/logo/logo.png';
 import useFetchData from '../hooks/useFetchData';
 import { AuthContext } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 
 export default function GroupChatList() {
   const { authUser } = useContext(AuthContext);
+  const { setData } = useData(); // Access setData from DataContext
   const userId = authUser?.id; // Assuming authUser has an 'id' property
 
   const { data: response, loading, error } = useFetchData(`/api/users/${userId}/groups`);
@@ -20,10 +22,14 @@ export default function GroupChatList() {
   if (error) return <p className="text-center">Error: {error}</p>;
   if (groups.length === 0) return <p className="text-center">There is no group</p>;
 
+  const handleGroupSelect = (group) => {
+    setData({ Group: group }); // Save the selected group in DataContext
+  };
+
   return (
     <>
       {groups.map((group, index) => (
-        <Link key={index} href={`/groups/group`} passHref className="flex gap-2 w-full cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-white hover:bg-opacity-70 active:bg-white active:bg-opacity-70 dark:hover:bg-gray-700 dark:active:bg-gray-600">
+        <Link key={index} href={`/groups/${group.id}`} passHref className="flex gap-2 w-full cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-white hover:bg-opacity-70 active:bg-white active:bg-opacity-70 dark:hover:bg-gray-700 dark:active:bg-gray-600" onClick={() => handleGroupSelect(group)}>
           <Image className="w-10 h-10 border-2 border-white rounded-full dark:border-gray-800" src={avator} alt="Avatar" width={40} height={40} /> 
           <div className="font-medium dark:text-white hide-on-100px">
             <div className="font-bold">{group.name}</div>

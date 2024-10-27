@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import ReactDOM from 'react-dom';
 import EmojiPicker from 'emoji-picker-react';
 import { useSentMessage } from '@/hooks/useSentMessage';
-import {  AuthContext } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
 
 function ChatTextBox({ chatType, id, onNewMessage }) {
 
@@ -13,11 +13,10 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
     const [showFilePreview, setShowFilePreview] = useState(false);
     const emojiPickerRef = useRef(null);
     const { sendMessage, loading, error } = useSentMessage();
-    const { authUser:user } = useContext(AuthContext);
+    const { authUser: user } = useContext(AuthContext);
 
-
-    let receiverId = null
-    let groupId = null
+    let receiverId = null;
+    let groupId = null;
 
     const handleEmojiClick = (emojiObject) => {
         if (emojiObject && emojiObject.emoji) {
@@ -28,6 +27,8 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
     };
 
     useEffect(() => {
+        console.log("sending message to group", "chattype", chatType, "id", id);
+
         const handleClickOutside = (event) => {
             if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
                 setShowEmojiPicker(false);
@@ -57,6 +58,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
     };
 
     const handleSend = async () => {
+        console.log("sending message", message, selectedFiles, user.id);
         const newMessage = {
             id: Date.now(), // Temporary ID for optimistic UI
             message,
@@ -68,25 +70,25 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
             status: 'Sending', // Initial status
             sender_id: user.id
         };
-        onNewMessage(newMessage)
+        onNewMessage(newMessage);
         try {
             if (chatType === "user") {
-                receiverId = id
- 
-            const response = await sendMessage(message, selectedFiles, user.id, receiverId , groupId=null);
-            console.log("response from sendMessage" , response.status);
-            if (response.status === "success") {
-                console.log("message sent successfully");
-                newMessage.status = 'Sent';
-
+                receiverId = id;
+                const response = await sendMessage(message, selectedFiles, user.id, receiverId, groupId = null);
+                console.log("response from sendMessage", response.status);
+                if (response.status === "success") {
+                    console.log("message sent successfully");
+                    newMessage.status = 'Sent';
+                }
+            } else if (chatType === "group") {
+                groupId = id;
+                console.log("sending message to group", message, selectedFiles, senderId = user.id, receiverId = null, groupId);
+                const response = await sendMessage(message, selectedFiles, senderId = user.id, receiverId = null, groupId);
+                if (response.status === "success") {
+                    newMessage.status = 'Sent';
+                }
             }
-        } else if (chatType.chatType === "group") {
-            groupId = id
-            console.log("sending message to group" ,message, selectedFiles, senderId=user.id, receiverId=id , groupId=null);
-
-            sendMessage(message, selectedFiles, senderId=user.id, receiverId=null , groupId);
-        }
-    } catch (error) {
+        } catch (error) {
             newMessage.status = 'Failed';
             console.error("Error sending message:", error);
         } finally {
@@ -104,25 +106,14 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
     };
 
     return (
-        <div className='flex justify-center items-center w-full'>
-            <div className="flex bg-[#f4f4f4] rounded-full shadow-md mx-4 py-2 justify-center items-center w-[90%] absolute bottom-6 px-4 relative">
+        <footer className='flex justify-center items-center w-full'>
+            <section className="flex bg-[#f4f4f4] rounded-full shadow-md mx-4 py-2 justify-center items-center w-[90%] absolute bottom-6 px-4 relative">
                 <div className="flex-grow mx-3">
                     <input
                         type="text"
                         placeholder="Message..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        // onKeyDown={(e) => {
-                        //     console.log('Key pressed:', e.key); // Check if this logs 'Enter'
-                        //     if (e.key === 'Enter') {
-                        //         console.log('Enter pressed, sending message...');
-
-                        //         e.preventDefault(); // Prevent default form submission behavior
-                        //         console.log('Enter pressed, sending message...');
-
-                        //         handleSend();
-                        //     }
-                        // }}
                         onKeyDown={(e) => {
                             console.log('Key pressed:', e.key); // Log the key to verify its value
                             if (e.key === 'Enter') {
@@ -138,6 +129,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                 <button
                     className="text-gray-500 hover:text-gray-700 focus:outline-none"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    aria-label="Toggle Emoji Picker"
                 >
                     <svg
                         className="w-6 h-6"
@@ -149,7 +141,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                     </svg>
                 </button>
 
-                <label htmlFor="fileInput" className="text-gray-500 hover:text-gray-700 focus:outline-none mx-3 cursor-pointer">
+                <label htmlFor="fileInput" className="text-gray-500 hover:text-gray-700 focus:outline-none mx-3 cursor-pointer" aria-label="Attach File">
                     <svg
                         className="w-6 h-6"
                         fill="currentColor"
@@ -185,11 +177,11 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                     multiple
                 />
                 {showEmojiPicker && renderEmojiPicker()}
-            </div>
+            </section>
 
             {showFilePreview && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white w-[500px] p-4 rounded shadow-lg ">
+                    <div className="bg-white w-[500px] p-4 rounded shadow-lg">
                         {filePreviewUrls.map((url, index) => (
                             <div key={index} className="mb-4">
                                 {selectedFiles[index].type.startsWith('image/') && (
@@ -200,7 +192,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                                 )}
                             </div>
                         ))}
-                        <div className='flex '>
+                        <div className='flex'>
                             <input
                                 type="text"
                                 placeholder="Message..."
@@ -211,6 +203,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                             <button
                                 className="text-gray-500 hover:text-gray-700 focus:outline-none"
                                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                aria-label="Toggle Emoji Picker"
                             >
                                 <svg
                                     className="w-6 h-6"
@@ -226,6 +219,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                             <button
                                 className="text-red-500 px-2 py-2 rounded mr-2"
                                 onClick={handleCancel}
+                                aria-label="Cancel"
                             >
                                 Cancel
                             </button>
@@ -233,6 +227,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                                 className="bg-black text-white border-2 border-black px-4 py-2 rounded"
                                 onClick={handleSend}
                                 disabled={loading}
+                                aria-label="Send"
                             >
                                 Send
                             </button>
@@ -240,7 +235,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                     </div>
                 </div>
             )}
-        </div>
+        </footer>
     );
 }
 

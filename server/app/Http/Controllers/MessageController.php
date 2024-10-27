@@ -58,4 +58,5 @@ class MessageController extends Controller
         $messages = $this->messageService->getMessagesByGroupPaginated($groupId, $perPage);
         return $this->successResponse($messages);
     }
+    
 }

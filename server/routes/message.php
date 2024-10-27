@@ -11,6 +11,7 @@ Route::get('/message-cards/{userId}', [MessageController::class, 'getMessageCard
 
 Route::get('/conversations/{conversationId}/messages', [MessageController::class, 'getMessagesByConversation']);
 
+Route::get('/groups/{groupId}/messages', [MessageController::class, 'getMessagesByGroup']); // Get messages by group
 // ... existing routes ...
 
 Route::post('/messages', [MessageController::class, 'store']);  // Store a new message
