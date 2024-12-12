@@ -17,7 +17,7 @@ function ChatPage() {
 	const { data: user } = useData();
 	const [chatData, setChatData] = useState({ data: [], loading: false, error: null });
 	const conversationId = user.has_conversation ? user.conversation_id : null;
-	const { data: responseData, loading, error } = useFetchData(conversationId ? `/api/conversations/${conversationId}/messages` : null);
+	const { data: responseData, loading, error } = useFetchData(conversationId ? `/conversations/${conversationId}/messages` : null);
 	// const echo = useEcho();
 
 	// useEffect(() => {
@@ -78,9 +78,15 @@ function ChatPage() {
 			data: [...prevChatData.data, newMessage],
 		}));
 	};
+	const handleUpdateMessageStatus = (messageId, status) => {
+		setChatData((prevChatData) => ({
+			...prevChatData,
+			data: prevChatData.data.map((msg) => msg.id === messageId ? { ...msg, status } : msg),
+		}));
+	};
 
-	if (chatData.loading) return <div>Loading...</div>;
-	if (chatData.error) return <div>Error: {chatData.error}</div>;
+	if (chatData.loading) return <div className="flex justify-center items-center w-full"><p>Loading...</p></div>;
+	if (chatData.error) return <div className="flex justify-center items-center w-full"><p>Error: {chatData.error}</p></div>;
 
 	return (
 		<div className="flex flex-col h-screen">
@@ -117,7 +123,7 @@ function ChatPage() {
 				)}
 				<div ref={messagesEndRef} />
 			</div>
-			<ChatTextBox chatType="user" id={user.user_id} onNewMessage={handleNewMessage} />
+			<ChatTextBox chatType="user" id={user.user_id} onNewMessage={handleNewMessage} onUpdateMessageStatus={handleUpdateMessageStatus} />
 		</div>
 	);
 }

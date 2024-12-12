@@ -27,7 +27,7 @@ class MessageController extends Controller
         $files = $request->file('files');  // Handle file uploads if any
         $message = $this->messageService->createMessage($messageData, $files);
 
-        broadcast(new MessageSent($message))->toOthers();
+        // broadcast(new MessageSent($message))->toOthers();
 
         return $this->successResponse('Message sent successfully', 201);
     }

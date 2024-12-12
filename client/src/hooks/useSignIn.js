@@ -9,7 +9,7 @@ export const useSignIn = () => {
     setError(null);
 
     try {
-      const data = await fetcher('/api/auth/login', {
+      const data = await fetcher('/auth/login', {
         method: 'post', // Changed to POST
         headers: {
           'Content-Type': 'application/json', // Added Content-Type header
@@ -20,7 +20,7 @@ export const useSignIn = () => {
 
       return data;
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred');
+      setError("sign in hooks",err);
     } finally {
       setLoading(false);
     }

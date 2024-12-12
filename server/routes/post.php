@@ -9,7 +9,7 @@ Route::get('/post', function () {
     return "welcome to post route";
 });
 
-Route::post('/posts', [PostController::class, 'store']);  
+Route::post('/post', [PostController::class, 'store']);  
 Route::get('/posts', [PostController::class, 'index']);        // Create a new post
 Route::get('/posts/{id}', [PostController::class, 'show']);       // Get a specific post by ID
 Route::put('/user/${userId}/post/{id}', [PostController::class, 'update']);     // Update a specific post

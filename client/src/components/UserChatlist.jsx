@@ -6,40 +6,38 @@ import { fetcher } from '../utils/fetcher';
 import { useRouter } from 'next/navigation';
 import { useData } from '@/context/DataContext';
 import { AuthContext } from '@/context/AuthContext';
-export default function UserChatlist({ userId }) {
+export default function UserChatlist() {
   const router = useRouter();
   const { authUser } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
-  const { data, setData } = useData();  // Keep track of `data` to avoid unnecessary updates
-
+  const { data, setData } = useData();
+  const [loading, setLoading] = useState(false);
+   // Keep track of `data` to avoid unnecessary updates
   useEffect(() => {
-    if (!authUser) {
-      console.error('Auth user is not available');
-      return;
-    }
-
-    console.log("auth user from user chatlist", authUser);
+   
 
     const fetchUsers = async () => {
+      setLoading(true);
       try {
-        const url = `/api/message-cards/${authUser.id}`;
+        const url = `/message-cards/${authUser.id}`;
         console.log("Fetching URL:", url);
 
         const data = await fetcher(url);
         console.log("Data from user chatlist:", data);
-
+        setLoading(false);
         if (JSON.stringify(users) !== JSON.stringify(data)) {
           setUsers(data);
         }
       } catch (error) {
         console.error("Failed to fetch users:", error);
+        setLoading(false);
       }
     };
 
     if (authUser) {
       fetchUsers();
     }
-  }, [authUser]);
+  }, [authUser, users]);
 
   const handleUserClick = (user) => {
     // Avoid updating context or causing re-renders unnecessarily
@@ -58,6 +56,7 @@ export default function UserChatlist({ userId }) {
 
   return (
     <>
+      {loading && <div className="flex justify-center items-center w-full"><p>Loading...</p></div>}
       {users.length > 0 && users.map((user, index) => (
         <div 
           key={index} 

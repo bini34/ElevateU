@@ -9,8 +9,9 @@ Route::get('/user', function () {
 });
 
 // Social Login Routes
-Route::get('/{provider}/redirect', [AuthController::class, 'redirectToProvider']);
-Route::get('/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
+Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirectToProvider']);
+Route::get('auth/{provider}/callback', [SocialLoginController::class, 'handleProviderCallback']);
+
 
 // Authentication Routes
 Route::post('/auth/register', [AuthController::class, 'register']);

@@ -14,7 +14,7 @@ function GroupChatPage() {
 	const { authUser } = useContext(AuthContext);
 	const { data: group } = useData();
 	const [chatData, setChatData] = useState({ data: [], loading: false, error: null });
-	const { data: responseData, loading, error } = useFetchData(`/api/groups/${group.id}/messages`);
+	const { data: responseData, loading, error } = useFetchData(`/groups/${group.id}/messages`);
 
 	useEffect(() => {
 		if (responseData) {
@@ -37,6 +37,13 @@ function GroupChatPage() {
 			data: [...prevChatData.data, newMessage],
 		}));
 	};
+	const handleUpdateMessageStatus = (messageId, status) => {
+		setChatData((prevChatData) => ({
+			...prevChatData,
+			data: prevChatData.data.map((msg) => msg.id === messageId ? { ...msg, status } : msg),
+		}));
+	};
+
 
 	if (chatData.loading) return <div>Loading...</div>;
 	if (chatData.error) return <div>Error: {chatData.error}</div>;
@@ -83,7 +90,7 @@ function GroupChatPage() {
 				)}
 				<div ref={messagesEndRef} />
 			</main>
-				<ChatTextBox chatType={{ chatType: "group" }} id={group.id} onNewMessage={handleNewMessage} />
+				<ChatTextBox chatType={{ chatType: "group" }} id={group.id} onNewMessage={handleNewMessage} onUpdateMessageStatus={handleUpdateMessageStatus} />
 		</div>
 	);
 }

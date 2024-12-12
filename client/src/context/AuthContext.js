@@ -1,6 +1,11 @@
 "use client"
 import React, { createContext, useState, useEffect } from 'react';
 
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
@@ -9,7 +14,8 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check local storage for a saved user
     const savedUser = JSON.parse(localStorage.getItem('user'));
-    const savedToken = localStorage.getItem('token');
+    const savedToken = getCookie('token');
+
     if (savedUser) {
       setAuthUser(savedUser);
     }
@@ -20,14 +26,14 @@ const AuthProvider = ({ children }) => {
 
   const login = (userData, token) => {
     localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', token);
+    document.cookie = `token=${token}; path=/; secure; samesite=strict`;
     setAuthUser(userData);
     setAuthToken(token);
   };
 
   const logout = () => {
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
     setAuthUser(null);
     setAuthToken(null);
   };

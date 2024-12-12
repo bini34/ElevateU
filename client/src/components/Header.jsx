@@ -45,6 +45,9 @@ export default function Header() {
             setUploadedFiles([]);
             toggleModal();
         }
+        else {
+            console.log('Post failed:', error);
+        }
     };
 
     const toggleMenu = () => {
@@ -52,7 +55,7 @@ export default function Header() {
     };
 
     return (
-        <header className="px-10 pb-5 w-full flex justify-between items-center space-x-6">
+        <header className="px-10 pb-5 w-full flex justify-between items-center">
             <h1 className="font-bold">ElevateU</h1>
             <div className="w-[500px]">
                 <form className="w-full sm:w-auto sm:flex-grow">   
@@ -104,8 +107,8 @@ export default function Header() {
                     <div className="bg-white p-6 rounded shadow-lg w-[500px]">
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center">
-                                <Image className="rounded-full" width={40} height={40} src={user?.avatar || avator} alt="Profile" />
-                                <span className="ml-2 font-bold">{`${authUser?.profile.firstName } ${authUser?.profile.lastName}`}</span>
+                                <Image className="rounded-full" width={40} height={40} src={authUser?.profile.avatar || avator} alt="Profile" />
+                                <span className="ml-2 font-bold">{`${authUser?.profile?.first_name} ${authUser?.profile?.last_name}`}</span>
                             </div>
                             <button onClick={toggleModal} className="text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-200 px-3 py-1">
                                 &times;
@@ -113,7 +116,7 @@ export default function Header() {
                         </div>
                         <textarea
                             className="w-full p-2 border rounded custom-input"
-                            placeholder={`What's on your mind, ${authUser?.profile.firstName}?`}
+                            placeholder={`What's on your mind, ${authUser?.profile?.first_name}`}
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             rows="4"
@@ -140,7 +143,7 @@ export default function Header() {
                                 </label>
                             </div>
                             <button className="px-4 py-2 bg-black text-white rounded" onClick={handleSubmit}>
-                                Post
+                               {loading ? "Posting..." : "Post"}
                             </button>
                         </div>
                     </div>

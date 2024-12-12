@@ -12,7 +12,7 @@ export default function GroupChatList() {
   const { setData } = useData(); // Access setData from DataContext
   const userId = authUser?.id; // Assuming authUser has an 'id' property
 
-  const { data: response, loading, error } = useFetchData(`/api/users/${userId}/groups`);
+  const { data: response, loading, error } = useFetchData(`/users/${userId}/groups`);
 
   const groups = response?.data || []; // Extract the groups array from the response
 

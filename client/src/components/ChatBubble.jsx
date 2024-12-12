@@ -2,15 +2,22 @@
 
 import React from 'react';
 import ChatAttachment from './ui/ChatAttachment';
-import ChatVoiceNote from './ui/ChatVoiceNote';
-import ChatImageGallery from './ui/ChatImageGallery';
-import ChatUrlPreview from './ui/ChatUrlPreview';
+// import ChatVoiceNote from './ui/ChatVoiceNote';
+// import ChatImageGallery from './ui/ChatImageGallery';
+// import ChatUrlPreview from './ui/ChatUrlPreview';
 import avatar from '../../public/images/avator.png';
+import Image from 'next/image';
 
 const ChatBubble = ({ message }) => {
   return (
     <div className="flex items-start gap-2.5">
-      <img className="w-8 h-8 rounded-full" src={message.avatar || avatar} alt={`${message.senderName}'s avatar`} />
+      <Image
+        className="w-8 h-8 rounded-full"
+        src={message.avatar || avatar}
+        alt={`${message.senderName}'s avatar`}
+        width={32}
+        height={32}
+      />
       <div className="flex flex-col gap-1 w-full max-w-[320px]">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-semibold text-gray-900 dark:text-white">{message.senderName}</span>

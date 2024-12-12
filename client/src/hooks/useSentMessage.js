@@ -23,7 +23,7 @@ export const useSentMessage = () => {
         }
 
         try {
-            const response = await fetcher('/api/messages', {
+            const response = await fetcher('/messages', {
                 method: 'POST',
                 body: formData,
             });

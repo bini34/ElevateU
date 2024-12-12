@@ -22,13 +22,16 @@ class AuthController extends Controller
     {
         // Validate the request data
         $validator = Validator::make($request->all(), [
-            'user_name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'user_name' => 'required|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|',
         ]);
 
         if ($validator->fails()) {
-            return $this->errorResponse($validator->errors(), 400);
+            $messages = $validator->errors()->all(); // Extract only the messages
+            return $this->errorResponse($messages, 400);
         }
 
         // Call the register method from AuthService
@@ -50,7 +53,8 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->errorResponse($validator->errors(), 400);
+            $messages = $validator->errors()->all(); // Extract only the messages
+            return $this->errorResponse($messages, 400);
         }
 
         // Call the login method from AuthService

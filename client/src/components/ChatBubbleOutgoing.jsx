@@ -2,9 +2,9 @@
 
 import React from 'react';
 import ChatAttachment from './ui/ChatAttachment';
-import ChatVoiceNote from './ui/ChatVoiceNote';
-import ChatImageGallery from './ui/ChatImageGallery';
-import ChatUrlPreview from './ui/ChatUrlPreview';
+// import ChatVoiceNote from './ui/ChatVoiceNote';
+// import ChatImageGallery from './ui/ChatImageGallery';
+// import ChatUrlPreview from './ui/ChatUrlPreview';
 import avatar from '../../public/images/avator.png';
 
 const ChatBubbleOutgoing = ({ message }) => {

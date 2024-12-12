@@ -3,10 +3,12 @@ import Image from "next/image";
 import { useState } from 'react';
 import { useRegister } from '@/hooks/useRegister';
 import { useRouter } from 'next/navigation';
+import toast, { Toaster } from "react-hot-toast";
+import { signUp } from '@/lib/auth';
+
 import Cookies from 'js-cookie'; // Import Cookies
 
 export default function Signup() {
-  const { register, loading, error } = useRegister();
   const [firstName, setFirstName] = useState(''); // Changed from user_name to firstName
   const [lastName, setLastName] = useState(''); // Added lastName state
   const [username, setUsername] = useState(''); // Added username state
@@ -15,18 +17,22 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
+  let loading = false;
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    loading = true;
 
-    if (!username || !firstName || !lastName || !email || !password || !confirmPassword) { // Updated to include username
+    if (!username || !firstName || !lastName || !email || !password || !confirmPassword) {
       setFormError('All fields are required.');
+      toast.error('All fields are required.');
       return;
     }
 
     if (password !== confirmPassword) {
       setPasswordError('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
@@ -34,20 +40,26 @@ export default function Signup() {
     setFormError('');
 
     try {
-      const data = await register(username, firstName, lastName, email, password, confirmPassword); // Updated to send username
+      const data = await signUp(username, firstName, lastName, email, password, confirmPassword);
       console.log("data from signup form", data);
       if (data && data.status === "success") {
-        Cookies.set('authToken', data.data.token); // Expires in 7 days
+        loading = false;
+        register(data.data.user, data.data.token);
+        Cookies.set('authToken', data.data.token);
         Cookies.set('authUser', data.data.user);
+        toast.success('Registration successful!');
         router.push('/');
       }
     } catch (err) {
       console.error('Error:', err);
+      toast.error('Registration failed. Please try again.');
+      loading = false;
     }
   };
 
   return (
     <div className='w-[500px] h-auto flex flex-col mx-auto my-5 justify-center gap-2 px-4 xxs:w-full md:w-[500px]'>
+      <Toaster />
       <div className='flex justify-center'>
         <Image src="/logo/logo.png" alt="logo" width={100} height={100}/> 
       </div>
@@ -109,8 +121,7 @@ export default function Signup() {
           <input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Confirm your Password"/>
         </div>
 
-        {formError && <p className="text-red-500 text-sm">{formError}</p>}
-        {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
+      
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <div className="flex justify-between">

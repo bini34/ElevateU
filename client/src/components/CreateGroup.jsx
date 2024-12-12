@@ -109,7 +109,7 @@ export default function CreateGroup({ setIsModalOpen }) {
                     className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-black/80"
                     disabled={loading} // Disable button when loading
                 >
-                    {loading ? 'Loading...' : 'Create'} // Display 'Loading...' when loading
+                    {loading ? 'Loading...' : 'Create'} 
                 </button>
             </form>
         </div>

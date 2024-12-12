@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const SocialMediaPostCarousel = ({ files }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const baseURL = "http://localhost:8000";
+  const baseURL = "http://localhost:8080";
 
   const mediaItems = files.map(file => ({
     type: file.mime.startsWith('image') ? 'image' : 'video',
@@ -24,24 +24,23 @@ const SocialMediaPostCarousel = ({ files }) => {
     );
   };
 
-  if (mediaItems.length === 0) {
-    return <p>No media items available.</p>; 
-  }
+ 
 
   return (
     <div id="social-media-carousel" className="relative w-full rounded-3xl" data-carousel="slide">
-      <div className="relative h-auto md:h-96 overflow-hidden rounded-3xl">
+      <div className="relative  min-h-96  overflow-hidden rounded-3xl">
         {mediaItems.map((item, index) => (
           <div
             key={index}
             className={`absolute inset-0 transition-all duration-700 ease-in-out ${index === activeIndex ? 'block' : 'hidden'}`}
             data-carousel-item={index === activeIndex ? 'active' : ''}
           >
+            {console.log("item.src",item.src)}
             {item.type === 'image' ? (
               <Image
                 src={item.src}
-                alt={`Slide ${index + 1}`}
                 fill 
+                alt={`Slide ${index + 1}`}
                 className="object-cover"
               />
             ) : (

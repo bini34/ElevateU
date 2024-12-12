@@ -7,27 +7,26 @@ import useFetchData from '@/hooks/useFetchData';
 
 
 export default function Home() {
-  const { data, loading, error } = useFetchData('/api/posts');
+  const { data, loading, error } = useFetchData('/posts');
 
   const posts = data && Array.isArray(data.data?.data) ? data.data.data : [];
-
+ console.log("posts", data);
   return (
     <Layout>
-      <div className="flex flex-col w-full max-h-screen pb-4 relative rounded-l-[80px] border-l-2 border-t-3 border-b-3 border-r-0 border-solid border-black bg-white pt-7 pl-7 pr-7">
+      <div className="flex flex-col w-full h-auto md:pb-4 relative md:rounded-l-[80px] md:border-l-2 md:border-t-3 md:border-b-3 md:border-r-0 md:border-solid md:border-black bg-white pt-2 md:pt-7 md:pl-7 md:pr-7">
         <div className="flex-grow">
+          <div className='hidden md:block'>
           <Header />
-          <main className="w-full h-[calc(100vh-160px)] flex flex-col justify-start pt-5 overflow-y-auto no-scrollbar">
-            <div className="w-[450px] mx-auto flex flex-col gap-6">
-              {posts.map((post) => (
+          </div>
+          <main className="w-full h-[90vh] flex flex-col justify-start pt-5 overflow-y-auto no-scrollbar">
+            <div className="sm:w-[450px] w-full mx-auto flex flex-col gap-5">
+             {posts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
               {loading && <p>Loading...</p>}
               {error && <p>Error: {error}</p>}
             </div>
           </main>
-        </div>
-        <div className="block md:hidden mt-auto">
-          <BottomNavigation />
         </div>
       </div>
     </Layout>

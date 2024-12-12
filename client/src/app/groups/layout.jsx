@@ -1,23 +1,17 @@
 "use client"
 import Layout from '@/components/Layout';
-import avator from '../../../public/logo/logo.png';
-import Image from 'next/image';
 import GroupChatList from '@/components/GroupChatList'; // Ensure this is the correct import
 // import useChat from '../../hooks/useChat';
 import { useState } from 'react';
-import { useGroup } from '@/hooks/useGroup';
+// import { useGroup } from '@/hooks/useGroup';
 import CreateGroup from '@/components/CreateGroup';
 export default function GroupLayout({ children }) {
+
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
   const handleButtonClick = () => {
     setIsModalOpen(true);
   };
-
-  
-  
-
-
 
 
   return (

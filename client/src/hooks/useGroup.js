@@ -22,7 +22,7 @@ export const useGroup = () => {
       formData.append(`owner_id`, authUser.id);
 
 
-      const data = await fetcher('/api/group', {
+      const data = await fetcher('/group', {
         method: 'post',
         body: formData,
       });

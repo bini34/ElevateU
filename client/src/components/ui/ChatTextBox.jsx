@@ -3,8 +3,9 @@ import ReactDOM from 'react-dom';
 import EmojiPicker from 'emoji-picker-react';
 import { useSentMessage } from '@/hooks/useSentMessage';
 import { AuthContext } from '@/context/AuthContext';
+import Image from 'next/image';
 
-function ChatTextBox({ chatType, id, onNewMessage }) {
+function ChatTextBox({ chatType, id, onNewMessage, onUpdateMessageStatus }) {
 
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [message, setMessage] = useState('');
@@ -12,7 +13,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
     const [filePreviewUrls, setFilePreviewUrls] = useState([]);
     const [showFilePreview, setShowFilePreview] = useState(false);
     const emojiPickerRef = useRef(null);
-    const { sendMessage, loading, error } = useSentMessage();
+    const { sendMessage, loading } = useSentMessage();
     const { authUser: user } = useContext(AuthContext);
 
     let receiverId = null;
@@ -39,7 +40,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, []);
+    }, [chatType, id]);
 
     const renderEmojiPicker = () => {
         return ReactDOM.createPortal(
@@ -72,25 +73,26 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
         };
         onNewMessage(newMessage);
         try {
+            let response;
             if (chatType === "user") {
                 receiverId = id;
-                const response = await sendMessage(message, selectedFiles, user.id, receiverId, groupId = null);
-                console.log("response from sendMessage", response.status);
-                if (response.status === "success") {
-                    console.log("message sent successfully");
-                    newMessage.status = 'Sent';
-                }
+                response = await sendMessage(message, selectedFiles, user.id, receiverId, groupId = null);
             } else if (chatType === "group") {
                 groupId = id;
-                console.log("sending message to group", message, selectedFiles, senderId = user.id, receiverId = null, groupId);
-                const response = await sendMessage(message, selectedFiles, senderId = user.id, receiverId = null, groupId);
-                if (response.status === "success") {
-                    newMessage.status = 'Sent';
-                }
+                console.log("sending message to group", "senderId", senderId, "receiverId", receiverId, "groupId", groupId);
+                response = await sendMessage(message, selectedFiles, senderId = user.id, receiverId = null, groupId);
+            }
+            console.log("response from chatTextBox sendMessage", response.status);
+            
+            if (response.status === "success") {
+                console.log("it send the message")
+                onUpdateMessageStatus(newMessage.id, 'Sent');
+            } else {
+                onUpdateMessageStatus(newMessage.id, 'Failed');
             }
         } catch (error) {
-            newMessage.status = 'Failed';
             console.error("Error sending message:", error);
+            onUpdateMessageStatus(newMessage.id, 'Failed');
         } finally {
             setShowFilePreview(false);
             setSelectedFiles([]);
@@ -185,7 +187,7 @@ function ChatTextBox({ chatType, id, onNewMessage }) {
                         {filePreviewUrls.map((url, index) => (
                             <div key={index} className="mb-4">
                                 {selectedFiles[index].type.startsWith('image/') && (
-                                    <img src={url} alt="Preview" className="max-h-40 mx-auto" />
+                                    <Image src={url} alt="Preview" className="max-h-40 mx-auto" width={100} height={100} />
                                 )}
                                 {selectedFiles[index].type.startsWith('video/') && (
                                     <video controls src={url} className="max-h-40 mx-auto" />
