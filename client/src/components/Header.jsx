@@ -125,7 +125,7 @@ export default function Header() {
                             {uploadedFiles.map((file, index) => (
                                 <div key={index} className="mt-2">
                                     {file.type.startsWith('image/') ? (
-                                        <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-auto rounded" />
+                                        <Image src={URL.createObjectURL(file)} alt="Preview" fill className="w-full h-auto rounded" />
                                     ) : (
                                         <video controls className="w-full h-auto rounded">
                                             <source src={URL.createObjectURL(file)} type={file.type} />
@@ -138,7 +138,7 @@ export default function Header() {
                         <div className="flex justify-between items-center mt-4">
                             <div className="flex space-x-2">
                                 <label className="p-2 rounded cursor-pointer">
-                                    <img className="x1b0d499 xl1xv1r" alt="" src="https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/Ivw7nhRtXyo.png" style={{ height: '24px', width: '24px' }} />
+                                    <Image className="x1b0d499 xl1xv1r" alt="" src="https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/Ivw7nhRtXyo.png" width={24} height={24} />
                                     <input type="file" multiple accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
                                 </label>
                             </div>

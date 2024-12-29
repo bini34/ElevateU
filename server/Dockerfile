@@ -30,7 +30,11 @@ RUN composer install
 # Set file permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Expose port 9000 and start PHP-FPM server
+# Create startup script directly in Dockerfile (simpler approach)
+RUN echo '#!/bin/sh\nphp artisan reverb:serve & php-fpm' > /usr/local/bin/startup.sh \
+    && chmod 755 /usr/local/bin/startup.sh
+
+# Expose port 9000 and start both services
 EXPOSE 9000
-CMD ["php-fpm"]
+CMD ["/usr/local/bin/startup.sh"]
 

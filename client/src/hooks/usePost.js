@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import  Fetch  from '../lib/fetcher';
+import { fetcher } from '../utils/fetcher';
 
 export const usePost = () => {
   const [loading, setLoading] = useState(false);
@@ -18,8 +18,8 @@ export const usePost = () => {
         formData.append(`file[${index}]`, file);
       });
 
-      const data = await Fetch('/post', {
-        method: 'post',
+      const data = await fetcher('/post', {
+        method: 'POST',
         body: formData,
       });
       console.log("data from post hooks", data);
