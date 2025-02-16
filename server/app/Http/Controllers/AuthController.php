@@ -38,8 +38,8 @@ class AuthController extends Controller
         $user = $this->authService->register($request->all());
 
         // Create a token for the user
-        $token = $user->createToken('Personal Access Token')->accessToken;
-
+       // $token = $user->createToken('Personal Access Token')->accessToken;
+        $token = "1234567890";
         // Return success response with user data and token
         return $this->successResponse(['user' => $user, 'token' => $token], "User registered successfully", 201);
     }
@@ -66,8 +66,8 @@ class AuthController extends Controller
         }
 
         // Create a token for the user
-        $token = $result->createToken('Personal Access Token')->accessToken;
-
+        // $token = $result->createToken('Personal Access Token')->accessToken;
+        $token = "1234567890";
         // Return success response with user data and token
         return $this->successResponse(['user' => $result, 'token' => $token], "User logged in successfully");
     }

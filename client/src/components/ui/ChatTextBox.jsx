@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import EmojiPicker from 'emoji-picker-react';
 import { useSentMessage } from '@/hooks/useSentMessage';
 import { AuthContext } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
+
 import Image from 'next/image';
 
 function ChatTextBox({ chatType, id, onNewMessage, onUpdateMessageStatus }) {
@@ -15,6 +17,7 @@ function ChatTextBox({ chatType, id, onNewMessage, onUpdateMessageStatus }) {
     const emojiPickerRef = useRef(null);
     const { sendMessage, loading } = useSentMessage();
     const { authUser: user } = useContext(AuthContext);
+    const { data } = useData();
 
     let receiverId = null;
     let groupId = null;
@@ -78,9 +81,9 @@ function ChatTextBox({ chatType, id, onNewMessage, onUpdateMessageStatus }) {
                 receiverId = id;
                 response = await sendMessage(message, selectedFiles, user.id, receiverId, groupId = null);
             } else if (chatType === "group") {
-                groupId = id;
-                console.log("sending message to group", "senderId", senderId, "receiverId", receiverId, "groupId", groupId);
-                response = await sendMessage(message, selectedFiles, senderId = user.id, receiverId = null, groupId);
+                groupId = data.id;
+                console.log("sending message to group", "senderId", user.id, "receiverId", receiverId, "groupId", groupId);
+                response = await sendMessage(message, selectedFiles, user.id, receiverId = null, groupId);
             }
             console.log("response from chatTextBox sendMessage", response.status);
             

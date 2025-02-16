@@ -18,26 +18,30 @@ const ChatBubble = ({ message }) => {
         width={32}
         height={32}
       />
-      <div className="flex flex-col gap-1 w-full max-w-[320px]">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col w-full max-w-[320px]">
+        <div className="flex items-center space-x-2 mb-1">
           <span className="text-sm font-semibold text-gray-900 dark:text-white">{message.senderName}</span>
           <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{message.time}</span>
         </div>
         {renderMessageContent(message)}
-        <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{message.status}</span>
       </div>
     </div>
   );
 };
 
 const renderMessageContent = (message) => {
-  const { type, content, file_attachments } = message;
+  const { type, content, file_attachments, status } = message;
 
   return (
     <>
       {type === 'text' && (
-        <div className="flex flex-col leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl dark:bg-gray-700">
-          <p className="text-sm font-normal text-gray-900 dark:text-white">{content}</p>
+        <div className="flex flex-col">
+          <div className="p-3 bg-gray-100 rounded-2xl rounded-tl-none dark:bg-gray-700">
+            <p className="text-sm font-normal text-gray-900 dark:text-white">{content}</p>
+          </div>
+          {status && (
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 mt-1">{status}</span>
+          )}
         </div>
       )}
       {file_attachments && file_attachments.map((file) => (

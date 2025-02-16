@@ -15,7 +15,7 @@ function GroupChatPage() {
 	const { data: group } = useData();
 	const [chatData, setChatData] = useState({ data: [], loading: false, error: null });
 	const { data: responseData, loading, error } = useFetchData(`/groups/${group.id}/messages`);
-
+	console.log("group", group);
 	useEffect(() => {
 		if (responseData) {
 			setChatData({
@@ -27,7 +27,8 @@ function GroupChatPage() {
 	}, [responseData, loading, error]);
 
 	useEffect(() => {
-		console.log("Group Chat Data:", chatData);
+		console.log("groupid", group);
+		console.log("Group Chat Data:", chatData.data.data);
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, [chatData]);
 
@@ -37,6 +38,7 @@ function GroupChatPage() {
 			data: [...prevChatData.data, newMessage],
 		}));
 	};
+
 	const handleUpdateMessageStatus = (messageId, status) => {
 		setChatData((prevChatData) => ({
 			...prevChatData,
@@ -44,23 +46,15 @@ function GroupChatPage() {
 		}));
 	};
 
-
-	if (chatData.loading) return <div>Loading...</div>;
-	if (chatData.error) return <div>Error: {chatData.error}</div>;
+	if (chatData.loading) return <div className="flex justify-center items-center w-full"><p>Loading...</p></div>;
+	if (chatData.error) return <div className="flex justify-center items-center w-full"><p>Error: {chatData.error}</p></div>;
 
 	return (
 		<div className="flex flex-col h-screen">
-			<header>
-				<ChatHeader />
-			</header>
-			<main className="flex-1 flex flex-col gap-4 overflow-y-auto p-4 pb-10">
-				{loading ?
-				 <p className="text-center">Loading...</p> : 
-				 error ? <p className="text-center">Error: {error}</p> : 
-				 chatData.data.length === 0 ? 
-				 <p className="text-center">There is no message in this group</p> : 
-				 chatData.data.map((msg) =>
-					msg.senderId === authUser.id ? (
+			<ChatHeader />
+			<div className="flex-1 flex flex-col gap-4 overflow-y-auto p-4 pb-10">
+				{(chatData.data || []).map((msg) =>
+					msg.sender_id === authUser.id ? (
 						<ChatBubbleOutgoing 
 							key={msg.id} 
 							message={{
@@ -69,10 +63,10 @@ function GroupChatPage() {
 								senderName: msg.sender.user_name,
 								avatar: msg.sender.profile.profile_picture_url,
 								time: new Date(msg.created_at).toLocaleTimeString(),
-								status: msg.status || 'Sent',
+								status: msg.status || 'Sent', // Use status from message
 								type: 'text'
 							}} 
-						/>
+							/>
 					) : (
 						<ChatBubble 
 							key={msg.id} 
@@ -85,12 +79,17 @@ function GroupChatPage() {
 								status: 'Received',
 								type: 'text'
 							}} 
-						/>
+							/>
 					)
 				)}
 				<div ref={messagesEndRef} />
-			</main>
-				<ChatTextBox chatType={{ chatType: "group" }} id={group.id} onNewMessage={handleNewMessage} onUpdateMessageStatus={handleUpdateMessageStatus} />
+			</div>
+			<ChatTextBox 
+				chatType="group" 
+				id={group.id} 
+				onNewMessage={handleNewMessage} 
+				onUpdateMessageStatus={handleUpdateMessageStatus} 
+			/>
 		</div>
 	);
 }

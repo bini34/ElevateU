@@ -5,7 +5,7 @@ import { useData } from '@/context/DataContext';
 function ChatHeader() {
  // Run only once on component mount
  const { data: user } = useData();
- console.log("user from chat header", user?.Group)
+ console.log("user from chat header", user?.name)
 
 
     return (
@@ -22,7 +22,7 @@ function ChatHeader() {
                 </div>
                 <div className="font-medium dark:text-white hide-on-100px">
                     <div className="font-bold">
-                        {user?.Group?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim()}
+                        {user?.name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim()}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                         Last seen recently

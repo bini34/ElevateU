@@ -24,6 +24,7 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
+
   const login = (userData, token) => {
     localStorage.setItem('user', JSON.stringify(userData));
     document.cookie = `token=${token}; path=/; secure; samesite=strict`;

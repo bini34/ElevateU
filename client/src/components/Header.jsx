@@ -1,5 +1,6 @@
 'use client';
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import avator from '../../public/images/avator.png';
 import { usePost } from '../hooks/usePost';
@@ -10,8 +11,9 @@ export default function Header() {
     const [content, setContent] = useState('');
     const { post, loading, error } = usePost();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { authUser } = useContext(AuthContext);
-
+    const { authUser, logout } = useContext(AuthContext);
+    const menuRef = useRef(null);
+    const router = useRouter();
     // // Fetch user data from cookies
     // useEffect(() => {
     //     if (authUser) {
@@ -35,6 +37,12 @@ export default function Header() {
         setUploadedFiles(files);
     };
 
+    const handleLogout = () => {
+        logout();
+        setIsMenuOpen(false);
+        router.push('/signin');
+    };
+
     const handleSubmit = async () => {
         const userId = authUser.id; // Replace with actual user ID
         console.log("content before post ", content);
@@ -53,6 +61,19 @@ export default function Header() {
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     return (
         <header className="px-10 pb-5 w-full flex justify-between items-center">
@@ -80,7 +101,7 @@ export default function Header() {
                     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5.365V3m0 2.365a5.338 5.338 0 0 1 5.133 5.368v1.8c0 2.386 1.867 2.982 1.867 4.175 0 .593 0 1.292-.538 1.292H5.538C5 18 5 17.301 5 16.708c0-1.193 1.867-1.789 1.867-4.175v-1.8A5.338 5.338 0 0 1 12 5.365ZM8.733 18c.094.852.306 1.54.944 2.112a3.48 3.48 0 0 0 4.646 0c.638-.572 1.236-1.26 1.33-2.112h-6.92Z" />
                 </svg>
 
-                <div className="flex items-center gap-3 relative">
+                <div className="flex items-center gap-3 relative" ref={menuRef}>
                     <div onClick={toggleMenu} className="flex items-center gap-3 cursor-pointer">
                         <Image
                             className="rounded-full"
@@ -92,12 +113,22 @@ export default function Header() {
                         <span>{`${authUser?.profile?.first_name} ${authUser?.profile?.last_name}`}</span>
                     </div>
                     {isMenuOpen && (
-                        <div className="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-50">
-                            <div className="py-1">
-                                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer">Profile</button>
-                                <button className="w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</button>
-                            </div>
-                        </div>
+                       <div className="absolute top-12  w-56 bg-white rounded-xl shadow-lg z-50 transform opacity-100 scale-100 transition-all duration-200 ease-out border border-gray-100">
+                       <div className="p-2">
+                           <button className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg flex items-center space-x-3 transition-colors duration-150">
+                               <svg className="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                               </svg>
+                               <span className="text-gray-700 text-sm font-medium">Profile</span>
+                           </button>
+                           <button onClick={handleLogout} className="w-full text-left px-4 py-2 hover:bg-gray-50 rounded-lg flex items-center space-x-3 transition-colors duration-150">
+                               <svg className="w-5 h-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                               </svg>
+                               <span className="text-gray-700 text-sm font-medium">Logout</span>
+                           </button>
+                       </div>
+                   </div>
                     )}
                 </div>
             </div>
@@ -125,9 +156,9 @@ export default function Header() {
                             {uploadedFiles.map((file, index) => (
                                 <div key={index} className="mt-2">
                                     {file.type.startsWith('image/') ? (
-                                        <Image src={URL.createObjectURL(file)} alt="Preview" fill className="w-full h-auto rounded" />
+                                        <Image src={URL.createObjectURL(file)} alt="Preview" width={100} height={100} className="rounded" />
                                     ) : (
-                                        <video controls className="w-full h-auto rounded">
+                                        <video controls className="w-[100px] h-auto rounded">
                                             <source src={URL.createObjectURL(file)} type={file.type} />
                                             Your browser does not support the video tag.
                                         </video>

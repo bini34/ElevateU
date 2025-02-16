@@ -1,11 +1,11 @@
 "use client"
 import Image from "next/image";
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useRegister } from '@/hooks/useRegister';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from "react-hot-toast";
 import { signUp } from '@/lib/auth';
-
+import { AuthContext } from '@/context/AuthContext';
 import Cookies from 'js-cookie'; // Import Cookies
 
 export default function Signup() {
@@ -17,6 +17,7 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
+  const { authUser, login } = useContext(AuthContext);
   let loading = false;
   const router = useRouter();
 
@@ -44,7 +45,7 @@ export default function Signup() {
       console.log("data from signup form", data);
       if (data && data.status === "success") {
         loading = false;
-        register(data.data.user, data.data.token);
+        login(data.data.user, data.data.token);
         Cookies.set('authToken', data.data.token);
         Cookies.set('authUser', data.data.user);
         toast.success('Registration successful!');
@@ -120,10 +121,6 @@ export default function Signup() {
           </div>
           <input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Confirm your Password"/>
         </div>
-
-      
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-
         <div className="flex justify-between">
           <div className="flex">
             <div className="flex items-center h-5">
@@ -142,12 +139,12 @@ export default function Signup() {
           {loading ? 'Submitting...' : 'Sign up'}
         </button>
       </form>
-      <div className="relative flex items-center justify-center w-full">
+      {/* <div className="relative flex items-center justify-center w-full">
         <hr className="w-full h-px my-8 bg-gray-200 border-0 dark:bg-[#C7C7C7]"/>
         <span className="absolute px-3 font-medium text-gray-900 bg-white dark:text-gray dark:bg-white left-1/2 transform -translate-x-1/2">or</span>
-      </div>
+      </div> */}
 
-      <div className="flex gap-2 xxs:flex-col">
+      {/* <div className="flex gap-2 xxs:flex-col">
         <button type="button" className="text-black bg-white border-black ring-1 ring-[#E0DEDE] border-3 w-full h-11 hover:bg-[#3b5998]/90 hover:text-white focus:ring-4 focus:outline-none focus:ring-[#3b5998]/50 font-medium rounded-3xl text-sm px-5 py-2.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-2 mb-2">
           <svg className="w-7 h-7 me-2" aria-hidden="true" fill="currentColor" viewBox="0 0 18 19">
             <image href="/icons/facebook.svg" height="100%" width="100%" />
@@ -160,7 +157,7 @@ export default function Signup() {
           </svg>
           Sign up with Google
         </button>
-      </div>
+      </div> */}
       <div>
         <p className="text-[#c7c7c7] text-center">Already have an account? <a href="/signin" className="text-red-500">Sign in</a></p>
       </div>

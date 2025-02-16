@@ -14,8 +14,8 @@ export const setToken = (token) => {
   
 
   
-  export const signUp = async (username, firstName, lastName, email, password, confirmPassword) => {
-    const data = await Fetch('/auth/register', 'POST', { username, firstName, lastName, email, password, confirmPassword });
+  export const signUp = async (user_name, first_name, last_name, email, password, confirmPassword) => {
+    const data = await Fetch('/auth/register', 'POST', { user_name, first_name, last_name, email, password, confirmPassword });
     setToken(data.token);
     return data;
   };

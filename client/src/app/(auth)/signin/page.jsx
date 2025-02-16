@@ -111,12 +111,12 @@ export default function Signin() {
           {loading ? "Loading..." : "Sign In"}
         </button>
       </form>
-      <div className="relative flex items-center justify-center w-full">
+      {/* <div className="relative flex items-center justify-center w-full">
         <hr className="w-full h-px my-8 bg-gray-200 border-0 dark:bg-[#C7C7C7]"/>
         <span className="absolute px-3 font-medium text-gray-900 bg-inherit dark:text-gray left-1/2 transform -translate-x-1/2">or</span>
-      </div>
+      </div> */}
 
-      <div className="flex gap-2 flex-col md:flex-row">
+      {/* <div className="flex gap-2 flex-col md:flex-row">
         <button type="button" className="text-black bg-white border-black ring-1 ring-[#E0DEDE] border-3 w-full h-11 hover:bg-[#3b5998]/90 hover:text-white focus:ring-4 focus:outline-none focus:ring-[#3b5998]/50 font-medium rounded-3xl text-sm px-5 py-2.5 text-center inline-flex items-center dark:focus:ring-[#3b5998]/55 me-2 mb-2">
         <div className="flex items-center justify-center">
           <svg className="w-7 h-7 me-2" aria-hidden="true" fill="currentColor" viewBox="0 0 18 19">
@@ -131,7 +131,7 @@ export default function Signin() {
           </svg>
           Sign in with Google
         </button>
-      </div>
+      </div> */}
       <div>
         <p className="text-[#c7c7c7] text-center">Don't have an account? <a href="/signup" className="text-red-500">Sign up</a></p>
       </div>

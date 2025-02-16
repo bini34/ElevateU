@@ -1,6 +1,5 @@
 // Import the fetcher utility
 import fetcher from '../utils/fetcher';
-
 // Function to create a new post
 export const createPost = async (postData) => {
   return await fetcher('/posts', 'POST', postData);
