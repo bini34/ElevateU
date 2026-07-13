@@ -20,5 +20,9 @@ class UserController extends Controller
     }
 
     // Retrieve user by ID
-   
+    public function show($id)
+    {
+        $user = $this->userService->getUserById($id);
+        return $this->successResponse(['user' => $user]);
+    }
 }

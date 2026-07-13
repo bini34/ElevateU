@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Repositories\AuthRepository;
 use App\Repositories\ProfileRepository;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthService
@@ -26,44 +26,30 @@ class AuthService
         $profileData['first_name'] = $data['first_name'];
         $profileData['last_name'] = $data['last_name'];
 
-        // Create the user
-        $user = $this->authRepository->create($userData);
-        
-        if ($user) {
+        // Create the user and profile together so a failure leaves no orphan user
+        return DB::transaction(function () use ($userData, $profileData) {
+            $user = $this->authRepository->create($userData);
+
             $profileData['user_id'] = $user->id;
             $this->profileRepository->createProfile($profileData);
 
-            // Fetch the profile data
-            $profile = $this->profileRepository->getProfileByUserId($user->id);
-            $user->profile = $profile;
-        }
-
-        return $user;
+            return $user->load('profile');
+        });
     }
 
+    /**
+     * Attempt to authenticate the user.
+     *
+     * @return \App\Models\User|null The user on success, null on invalid credentials.
+     */
     public function login(array $data)
     {
-        // Validate login credentials
-        $validator = Validator::make($data, [
-            'email' => 'required|string|email',
-            'password' => 'required|string|min:8',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
-        }
-
-        // Attempt to log the user in
         $user = $this->authRepository->findByEmail($data['email']);
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            return response()->json(['error' => 'Invalid email or password'], 401);
+            return null;
         }
 
-        // Fetch the profile data
-        $profile = $this->profileRepository->getProfileByUserId($user->id);
-        $user->profile = $profile;
-
-        return $user;
+        return $user->load('profile');
     }
 }

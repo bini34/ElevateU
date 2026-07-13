@@ -1,26 +1,33 @@
+import { getToken } from './token';
+
+// Thin wrapper around fetch(). Returns the parsed JSON body for any HTTP
+// status (the API sends structured {status, message, data} errors) and only
+// throws when the request itself fails (network error, invalid JSON).
 const Fetch = async (url, method, body) => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    const fullUrl = `${backendUrl}${url}`;
-    const options = {
-      method,
-      headers: {},
-    };
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backendUrl) {
+    throw new Error('NEXT_PUBLIC_BACKEND_URL is not configured');
+  }
+  const fullUrl = `${backendUrl}${url}`;
 
-    if (body instanceof FormData) {
-      options.body = body; // FormData is used directly as the body
-    } else {
-      options.headers['Content-Type'] = 'application/json';
-      options.headers['Accept'] = 'application/json';
-      options.body = JSON.stringify(body);
-    }
-
-    try {
-      const response = await fetch(fullUrl, options);
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API Fetch Error:', error);
-    }
+  const token = getToken();
+  const options = {
+    method,
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   };
-  
-  export default Fetch;
+
+  if (body instanceof FormData) {
+    options.body = body; // FormData is used directly as the body
+  } else if (body !== undefined) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(fullUrl, options);
+  return response.json();
+};
+
+export default Fetch;

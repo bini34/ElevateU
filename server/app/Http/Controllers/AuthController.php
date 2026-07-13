@@ -26,7 +26,7 @@ class AuthController extends Controller
             'last_name' => 'required|string|max:255',
             'user_name' => 'required|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -38,8 +38,8 @@ class AuthController extends Controller
         $user = $this->authService->register($request->all());
 
         // Create a token for the user
-       // $token = $user->createToken('Personal Access Token')->accessToken;
-        $token = "1234567890";
+        $token = $user->createToken('auth_token')->accessToken;
+
         // Return success response with user data and token
         return $this->successResponse(['user' => $user, 'token' => $token], "User registered successfully", 201);
     }
@@ -58,17 +58,28 @@ class AuthController extends Controller
         }
 
         // Call the login method from AuthService
-        $result = $this->authService->login($request->all());
+        $user = $this->authService->login($request->only(['email', 'password']));
 
-        // Check if the login was unsuccessful
-        if ($result instanceof \Illuminate\Http\JsonResponse && $result->getStatusCode() === 401) {
-            return $this->errorResponse($result->getData()->error, $result->getStatusCode());
+        if (!$user) {
+            return $this->errorResponse('Invalid email or password', 401);
         }
 
         // Create a token for the user
-        // $token = $result->createToken('Personal Access Token')->accessToken;
-        $token = "1234567890";
+        $token = $user->createToken('auth_token')->accessToken;
+
         // Return success response with user data and token
-        return $this->successResponse(['user' => $result, 'token' => $token], "User logged in successfully");
+        return $this->successResponse(['user' => $user, 'token' => $token], "User logged in successfully");
+    }
+
+    public function me(Request $request)
+    {
+        return $this->successResponse(['user' => $request->user()->load('profile')]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->token()->revoke();
+
+        return $this->successResponse(null, "Logged out successfully");
     }
 }

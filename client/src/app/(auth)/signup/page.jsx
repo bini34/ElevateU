@@ -1,29 +1,25 @@
 "use client"
 import Image from "next/image";
 import { useState, useContext } from 'react';
-import { useRegister } from '@/hooks/useRegister';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from "react-hot-toast";
 import { signUp } from '@/lib/auth';
 import { AuthContext } from '@/context/AuthContext';
-import Cookies from 'js-cookie'; // Import Cookies
 
 export default function Signup() {
-  const [firstName, setFirstName] = useState(''); // Changed from user_name to firstName
-  const [lastName, setLastName] = useState(''); // Added lastName state
-  const [username, setUsername] = useState(''); // Added username state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
-  const { authUser, login } = useContext(AuthContext);
-  let loading = false;
+  const [loading, setLoading] = useState(false);
+  const { login } = useContext(AuthContext);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    loading = true;
 
     if (!username || !firstName || !lastName || !email || !password || !confirmPassword) {
       setFormError('All fields are required.');
@@ -32,29 +28,33 @@ export default function Signup() {
     }
 
     if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match.');
+      setFormError('Passwords do not match.');
       toast.error('Passwords do not match.');
       return;
     }
 
-    setPasswordError('');
     setFormError('');
+    setLoading(true);
 
     try {
       const data = await signUp(username, firstName, lastName, email, password, confirmPassword);
-      console.log("data from signup form", data);
-      if (data && data.status === "success") {
-        loading = false;
+      if (data?.status === "success") {
         login(data.data.user, data.data.token);
-        Cookies.set('authToken', data.data.token);
-        Cookies.set('authUser', data.data.user);
         toast.success('Registration successful!');
         router.push('/');
+      } else {
+        const message = Array.isArray(data?.message)
+          ? data.message.join(' ')
+          : data?.message || 'Registration failed. Please try again.';
+        setFormError(message);
+        toast.error(message);
       }
     } catch (err) {
-      console.error('Error:', err);
-      toast.error('Registration failed. Please try again.');
-      loading = false;
+      const message = err.message || 'Registration failed. Please try again.';
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,8 +131,12 @@ export default function Signup() {
           <a className='text-base text-[#bfdaf9]' href="#"> Forget your password</a>
         </div>
 
-        <button 
-          type="submit" 
+        {formError && (
+          <p className="text-red-500 text-sm text-center" role="alert">{formError}</p>
+        )}
+
+        <button
+          type="submit"
           className={`bg-red-500 text-lg text-white w-full py-2 rounded-3xl hover:bg-red-400 ${loading ? 'cursor-not-allowed' : ''}`}
           disabled={loading}
         >

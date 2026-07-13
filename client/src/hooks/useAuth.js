@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
+import { getToken } from '@/lib/token';
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = Cookies.get('authToken');
-    setIsAuthenticated(token ? true : false);
+    setIsAuthenticated(Boolean(getToken()));
   }, []);
 
   return isAuthenticated;
 };
-

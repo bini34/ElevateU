@@ -1,39 +1,40 @@
 "use client"
 import React, { createContext, useState, useEffect } from 'react';
+import { setToken, getToken, removeToken, signOut } from '@/lib/auth';
 
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-}
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
   const [authUser, setAuthUser] = useState(null);
   const [authToken, setAuthToken] = useState(null);
-  useEffect(() => {
-    // Check local storage for a saved user
-    const savedUser = JSON.parse(localStorage.getItem('user'));
-    const savedToken = getCookie('token');
 
-    if (savedUser) {
-      setAuthUser(savedUser);
+  useEffect(() => {
+    // Restore the session from the token cookie + saved user
+    let savedUser = null;
+    try {
+      savedUser = JSON.parse(localStorage.getItem('user'));
+    } catch {
+      localStorage.removeItem('user');
     }
-    if (savedToken) {
+    const savedToken = getToken();
+
+    if (savedUser && savedToken) {
+      setAuthUser(savedUser);
       setAuthToken(savedToken);
     }
   }, []);
 
-
   const login = (userData, token) => {
     localStorage.setItem('user', JSON.stringify(userData));
-    document.cookie = `token=${token}; path=/; secure; samesite=strict`;
+    setToken(token);
     setAuthUser(userData);
     setAuthToken(token);
   };
 
   const logout = () => {
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Revoke the token server-side (best effort), then clear local state
+    signOut().catch(() => {});
+    removeToken();
     localStorage.removeItem('user');
     setAuthUser(null);
     setAuthToken(null);

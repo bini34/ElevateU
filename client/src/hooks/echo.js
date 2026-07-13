@@ -17,7 +17,7 @@ const useEcho = () => {
             authorizer: channel => {
                 return {
                     authorize: (socketId, callback) => {
-                        fetcher('/api/broadcasting/auth', {
+                        fetcher('/broadcasting/auth', {
                             method: 'POST',
                             body: JSON.stringify({
                                 socket_id: socketId,

@@ -12,35 +12,42 @@ export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
-  const { authUser, login } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const handleSubmit = async (e) => {
-    setLoading(true);
     e.preventDefault();
-    const data = await signIn(email, password);
-      console.log("data from signin", data)
+    setLoading(true);
+    try {
+      const data = await signIn(email, password);
       if (data?.status === "success") {
         login(data.data.user, data.data.token);
-        
+
         toast.success("Login successful!", {
           duration: 3000,
           position: "top-center",
           style: { background: "#4CAF50", color: "#fff" },
         });
-        setLoading(false);
         router.push("/");
       } else {
-        toast.error(data.message, {
+        const message = Array.isArray(data?.message)
+          ? data.message.join(" ")
+          : data?.message || "Login failed. Please try again.";
+        toast.error(message, {
           duration: 3000,
           position: "top-center",
           style: { background: "#FF4719", color: "#fff" },
         });
-        setEmail("");
         setPassword("");
-        setLoading(false);
       }
+    } catch (err) {
+      toast.error(err.message || "Could not reach the server. Please try again.", {
+        duration: 3000,
+        position: "top-center",
+        style: { background: "#FF4719", color: "#fff" },
+      });
+    } finally {
       setLoading(false);
-  
+    }
   };
 
   return (
@@ -133,7 +140,7 @@ export default function Signin() {
         </button>
       </div> */}
       <div>
-        <p className="text-[#c7c7c7] text-center">Don't have an account? <a href="/signup" className="text-red-500">Sign up</a></p>
+        <p className="text-[#c7c7c7] text-center">Don&apos;t have an account? <a href="/signup" className="text-red-500">Sign up</a></p>
       </div>
     </div>
   );
