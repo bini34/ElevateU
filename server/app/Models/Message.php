@@ -29,8 +29,22 @@ class Message extends Model
         'sender_id',
         'group_id',
         'receiver_id',
-        'conversation_id'
+        'conversation_id',
+        'client_uuid',
+        'read_at'
     ];
+
+    protected $casts = [
+        'read_at' => 'datetime',
+    ];
+
+    /**
+     * Store timestamps with microseconds so same-second messages keep a
+     * stable chronological order (columns are timestamp(6)).
+     *
+     * @var string
+     */
+    protected $dateFormat = 'Y-m-d H:i:s.u';
 
     public function sender(){
         return $this->belongsTo(User::class, 'sender_id');

@@ -4,12 +4,20 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MessageController;
 
 Route::middleware('auth:api')->group(function () {
-    Route::get('/message-cards/{userId}', [MessageController::class, 'getMessageCards']);
+    // Chat list cards for the authenticated user
+    Route::get('/message-cards', [MessageController::class, 'getMessageCards']);
 
+    // Other user + conversation lookup for /chat/{userId}
+    Route::get('/conversations/with/{userId}', [MessageController::class, 'conversationWith']);
+
+    // Conversation history + read receipts
     Route::get('/conversations/{conversationId}/messages', [MessageController::class, 'getMessagesByConversation']);
+    Route::post('/conversations/{conversationId}/read', [MessageController::class, 'markRead']);
 
-    Route::get('/groups/{groupId}/messages', [MessageController::class, 'getMessagesByGroup']); // Get messages by group
+    // Group history
+    Route::get('/groups/{groupId}/messages', [MessageController::class, 'getMessagesByGroup']);
 
-    Route::post('/messages', [MessageController::class, 'store']);  // Store a new message
-    Route::get('/messages/{id}', [MessageController::class, 'show']);  // Get a message by ID
+    // Messages
+    Route::post('/messages', [MessageController::class, 'store']);
+    Route::get('/messages/{id}', [MessageController::class, 'show']);
 });

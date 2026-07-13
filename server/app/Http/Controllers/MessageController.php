@@ -2,61 +2,124 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
+use App\Events\MessagesRead;
 use App\Services\MessageService;
-use Illuminate\Http\Request;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
-use App\Events\MessageSent;
-
+use Illuminate\Http\Request;
 
 class MessageController extends Controller
 {
-
     use ApiResponse;
 
-    protected $messageService ;
+    protected $messageService;
 
     public function __construct(MessageService $messageService)
     {
         $this->messageService = $messageService;
     }
 
+    /**
+     * Send a message as the authenticated user (P2P or group).
+     */
     public function store(Request $request): JsonResponse
     {
-        $messageData = $request->all();
-        $files = $request->file('files');  // Handle file uploads if any
-        $message = $this->messageService->createMessage($messageData, $files);
+        $validated = $request->validate([
+            'message' => 'required_without:files|nullable|string|max:5000',
+            'files' => 'required_without:message|nullable|array|max:10',
+            'files.*' => 'file|mimes:jpeg,png,jpg,gif,webp,mp4,avi,mov,pdf,doc,docx|max:20480',
+            'receiver_id' => 'required_without:group_id|nullable|uuid|exists:users,id',
+            'group_id' => 'nullable|uuid|exists:groups,id',
+            'client_uuid' => 'nullable|uuid',
+        ]);
 
-        // broadcast(new MessageSent($message))->toOthers();
+        $senderId = $request->user()->id;
 
-        return $this->successResponse('Message sent successfully', 201);
+        if (($validated['receiver_id'] ?? null) === $senderId) {
+            return $this->errorResponse('You cannot message yourself.', 422);
+        }
+
+        $result = $this->messageService->createMessage(
+            $senderId,
+            $validated,
+            $request->file('files', [])
+        );
+
+        // Broadcast only on first creation — an idempotent retry must not
+        // emit the message a second time. toOthers() keeps the sender's own
+        // socket (X-Socket-ID header) from receiving its echo.
+        if ($result['created']) {
+            broadcast(new MessageSent($result['message']))->toOthers();
+        }
+
+        return $this->successResponse(
+            ['message' => $result['message']],
+            $result['created'] ? 'Message sent successfully' : 'Message already sent',
+            $result['created'] ? 201 : 200
+        );
     }
 
-    public function show($id): JsonResponse
+    public function show(Request $request, $id): JsonResponse
     {
-        $message = $this->messageService->getMessageById($id);
+        $message = $this->messageService->getMessageById($id, $request->user()->id);
         return $this->successResponse($message);
     }
 
-    public function getMessageCards($userId)
+    /**
+     * Chat list cards for the authenticated user.
+     */
+    public function getMessageCards(Request $request): JsonResponse
     {
-        $messageCards = $this->messageService->getUserConversations($userId);
-
-        return response()->json($messageCards);
+        $cards = $this->messageService->getUserConversations($request->user()->id);
+        return $this->successResponse($cards);
     }
 
-    public function getMessagesByConversation($conversationId, Request $request)
+    /**
+     * The other user + existing conversation (if any) for /chat/{userId}.
+     */
+    public function conversationWith(Request $request, $userId): JsonResponse
     {
-        $perPage = $request->input('per_page', 10); // Default to 10 if not provided
-        $messages = $this->messageService->getMessagesByConversationPaginated($conversationId, $perPage);
-
-        return response()->json($messages);
+        $data = $this->messageService->getConversationWith($request->user()->id, $userId);
+        return $this->successResponse($data);
     }
-    public function getMessagesByGroup(Request $request, $groupId): JsonResponse
+
+    public function getMessagesByConversation(Request $request, $conversationId): JsonResponse
     {
-        $perPage = $request->input('per_page', 10); // Default pagination to 10
-        $messages = $this->messageService->getMessagesByGroupPaginated($groupId, $perPage);
+        $perPage = min((int) $request->input('per_page', 20), 50);
+        $messages = $this->messageService->getMessagesByConversationPaginated(
+            $conversationId,
+            $request->user()->id,
+            $perPage
+        );
+
         return $this->successResponse($messages);
     }
-    
+
+    /**
+     * Mark all messages sent to the authenticated user in a conversation as
+     * read and notify the other participant.
+     */
+    public function markRead(Request $request, $conversationId): JsonResponse
+    {
+        $result = $this->messageService->markConversationRead($conversationId, $request->user()->id);
+
+        if ($result['updated'] > 0) {
+            broadcast(new MessagesRead($conversationId, $request->user()->id, $result['read_at']))->toOthers();
+        }
+
+        return $this->successResponse($result, 'Conversation marked as read');
+    }
+
+    public function getMessagesByGroup(Request $request, $groupId): JsonResponse
+    {
+        $perPage = min((int) $request->input('per_page', 20), 50);
+        $messages = $this->messageService->getMessagesByGroupPaginated(
+            $groupId,
+            $request->user()->id,
+            $perPage
+        );
+
+        return $this->successResponse($messages);
+    }
 }

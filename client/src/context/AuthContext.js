@@ -1,6 +1,7 @@
 "use client"
 import React, { createContext, useState, useEffect } from 'react';
 import { setToken, getToken, removeToken, signOut } from '@/lib/auth';
+import { disconnectEcho } from '@/hooks/echo';
 
 const AuthContext = createContext();
 
@@ -34,6 +35,7 @@ const AuthProvider = ({ children }) => {
   const logout = () => {
     // Revoke the token server-side (best effort), then clear local state
     signOut().catch(() => {});
+    disconnectEcho();
     removeToken();
     localStorage.removeItem('user');
     setAuthUser(null);

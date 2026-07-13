@@ -12,6 +12,8 @@ export const fetcher = async (url, options = {}) => {
   const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
   const token = options.token || getToken();
+  // Lets the server exclude this client's own websocket from broadcasts
+  const socketId = typeof window !== 'undefined' ? window.__echoSocketId : null;
 
   try {
     const response = await axios({
@@ -21,6 +23,7 @@ export const fetcher = async (url, options = {}) => {
         'Accept': 'application/json',
         ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(socketId ? { 'X-Socket-Id': socketId } : {}),
         ...options.headers,
       },
       data: options.body || null,

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 
@@ -9,11 +10,24 @@ class MessageRepository
 {
     protected $message;
     protected $user;
-    
+
     public function __construct(Message $message, User $user)
     {
         $this->message = $message;
         $this->user = $user;
+    }
+
+    protected function withSender($query)
+    {
+        return $query->with([
+            'sender' => function ($query) {
+                $query->select('id', 'user_name')
+                      ->with(['profile' => function ($query) {
+                          $query->select('user_id', 'profile_picture_URL', 'first_name', 'last_name');
+                      }]);
+            },
+            'fileAttachments',
+        ]);
     }
 
     public function create(array $data)
@@ -23,101 +37,117 @@ class MessageRepository
 
     public function find($id)
     {
-        return $this->message->with(['sender.profile' => function ($query) {
-            $query->select('user_id', 'first_name', 'last_name', 'profile_picture_url');
-        }])->findOrFail($id);
+        return $this->withSender($this->message->newQuery())->findOrFail($id);
     }
-     
-    public function getMessagesByConversationPaginated($conversationId, $perPage = 10)
+
+    public function findBySenderAndClientUuid(string $senderId, string $clientUuid)
+    {
+        return $this->withSender($this->message->newQuery())
+            ->where('sender_id', $senderId)
+            ->where('client_uuid', $clientUuid)
+            ->first();
+    }
+
+    /**
+     * Newest page first; the client reverses each page for display and asks
+     * for higher pages to load older history.
+     */
+    public function getMessagesByConversationPaginated($conversationId, $perPage = 20)
+    {
+        return $this->withSender($this->message->newQuery())
+            ->where('conversation_id', $conversationId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+    }
+
+    public function getMessagesByGroupPaginated($groupId, $perPage = 20)
+    {
+        return $this->withSender($this->message->newQuery())
+            ->where('group_id', $groupId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Mark every message the other participant sent in this conversation as
+     * read. Returns the number of rows updated.
+     */
+    public function markConversationRead(string $conversationId, string $readerId, string $readAt): int
     {
         return $this->message->where('conversation_id', $conversationId)
-            ->with([
-                'sender.profile' => function ($query) {
-                    $query->select('user_id', 'first_name', 'last_name', 'profile_picture_url');
-                },
-                'fileAttachments' // Eager load file attachments
-            ])
-            ->orderBy('created_at', 'asc')
-            ->paginate($perPage);
+            ->where('sender_id', '!=', $readerId)
+            ->whereNull('read_at')
+            ->update(['read_at' => $readAt]);
     }
 
-    public function getMessagesByGroupPaginated($groupId, $perPage = 10)
+    /**
+     * Chat list cards: existing conversations (with last message + unread
+     * count) followed by other users you can start a chat with.
+     *
+     * Three bounded queries — never loads full message history.
+     */
+    public function getUserConversations(string $userId)
     {
-        return $this->message->where('group_id', $groupId)
-            ->with(['sender.profile' => function ($query) {
-                $query->select('user_id', 'first_name', 'last_name', 'profile_picture_url');
-            },
-            'fileAttachments'
+        $conversations = Conversation::where('user_id1', $userId)
+            ->orWhere('user_id2', $userId)
+            ->with([
+                'lastMessage',
+                'user1' => fn ($q) => $q->select('id', 'user_name')->with('profile'),
+                'user2' => fn ($q) => $q->select('id', 'user_name')->with('profile'),
             ])
-            ->orderBy('created_at', 'asc')
-            ->paginate($perPage);
-    }
-    public function getUserConversations($userId)
-    {
-        // Fetch all users except the current user
-        $allUsers = $this->user->where('id', '!=', $userId)
-            ->with('profile') // Eager load profile
             ->get();
 
-        // Fetch the latest message for each conversation involving the current user
-        $latestMessages = $this->message->where(function ($query) use ($userId) {
-            $query->where('sender_id', $userId)
-                  ->orWhere('receiver_id', $userId);
-        })
-        ->orderBy('created_at', 'desc')
-        ->get()
-        ->unique('conversation_id');
+        $unreadCounts = $this->message->selectRaw('conversation_id, COUNT(*) as unread')
+            ->whereIn('conversation_id', $conversations->pluck('id'))
+            ->where('sender_id', '!=', $userId)
+            ->whereNull('read_at')
+            ->groupBy('conversation_id')
+            ->pluck('unread', 'conversation_id');
 
-        // Map conversation data to user IDs
-        $conversationData = $latestMessages->mapWithKeys(function ($message) use ($userId) {
-            $otherUserId = $message->sender_id === $userId ? $message->receiver_id : $message->sender_id;
-            return [$otherUserId => [
-                'conversation_id' => $message->conversation_id,
-                'last_message' => $message->message,
-            ]];
-        });
+        $conversationCards = $conversations->map(function ($conversation) use ($userId, $unreadCounts) {
+            $other = $conversation->user_id1 === $userId ? $conversation->user2 : $conversation->user1;
+            if (!$other) {
+                return null; // participant deleted
+            }
 
-        // Users with conversations
-        $usersWithConversations = $allUsers->filter(function ($user) use ($conversationData) {
-            return $conversationData->has($user->id);
-        })->map(function ($user) use ($conversationData) {
-            $conversation = $conversationData->get($user->id);
             return [
-                'user_id' => $user->id,
-                'first_name' => $user->profile->first_name ?? '',
-                'last_name' => $user->profile->last_name ?? '',
-                'profile_picture_url' => $user->profile->profile_picture_url ?? '',
+                'user_id' => $other->id,
+                'user_name' => $other->user_name,
+                'first_name' => $other->profile->first_name ?? '',
+                'last_name' => $other->profile->last_name ?? '',
+                'profile_picture_URL' => $other->profile->profile_picture_URL ?? null,
                 'has_conversation' => true,
-                'conversation_id' => $conversation['conversation_id'],
-                'last_message' => $conversation['last_message'] ?? null,
-                'joined_at' => $user->profile->created_at,
+                'conversation_id' => $conversation->id,
+                'last_message' => $conversation->lastMessage?->message,
+                'last_message_at' => $conversation->lastMessage?->created_at,
+                'last_message_sender_id' => $conversation->lastMessage?->sender_id,
+                'unread_count' => (int) ($unreadCounts[$conversation->id] ?? 0),
             ];
-        });
+        })->filter()->sortByDesc('last_message_at')->values();
 
-        // Users without conversations
-        $usersWithoutConversations = $allUsers->filter(function ($user) use ($conversationData) {
-            return !$conversationData->has($user->id);
-        })->map(function ($user) {
-            return [
+        $knownIds = $conversationCards->pluck('user_id')->push($userId);
+
+        $otherUsers = $this->user->whereNotIn('id', $knownIds)
+            ->with('profile')
+            ->orderBy('created_at')
+            ->limit(100)
+            ->get()
+            ->map(fn ($user) => [
                 'user_id' => $user->id,
+                'user_name' => $user->user_name,
                 'first_name' => $user->profile->first_name ?? '',
                 'last_name' => $user->profile->last_name ?? '',
-                'profile_picture_url' => $user->profile->profile_picture_url ?? '',
+                'profile_picture_URL' => $user->profile->profile_picture_URL ?? null,
                 'has_conversation' => false,
                 'conversation_id' => null,
                 'last_message' => null,
-                'joined_at' => $user->profile->created_at,
-            ];
-        });
+                'last_message_at' => null,
+                'last_message_sender_id' => null,
+                'unread_count' => 0,
+            ]);
 
-        // Ensure both are collections before merging
-        $usersWithConversations = collect($usersWithConversations);
-        $usersWithoutConversations = collect($usersWithoutConversations);
-
-        // Merge both collections and return
-        return $usersWithConversations->merge($usersWithoutConversations);
+        return $conversationCards->concat($otherUsers)->values();
     }
-    
-    
-
 }

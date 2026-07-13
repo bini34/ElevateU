@@ -13,10 +13,11 @@ RUN apt-get update && apt-get install -y \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     zip \
-    unzip
+    unzip \
+    supervisor
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring gd
+# Install PHP extensions (pcntl is required by the Reverb websocket server)
+RUN docker-php-ext-install pdo_mysql mbstring gd pcntl
 
 # PHP upload limits for post/message media
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
@@ -33,11 +34,10 @@ RUN composer install
 # Set file permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Create startup script directly in Dockerfile (simpler approach)
-RUN echo '#!/bin/sh\nphp artisan reverb:serve & php-fpm' > /usr/local/bin/startup.sh \
-    && chmod 755 /usr/local/bin/startup.sh
+# Supervisor runs php-fpm, the Reverb websocket server and the queue worker
+COPY supervisord.conf /etc/supervisor/conf.d/app.conf
 
-# Expose port 9000 and start both services
-EXPOSE 9000
-CMD ["/usr/local/bin/startup.sh"]
+# 9000 = php-fpm (nginx upstream), 6001 = Reverb websockets
+EXPOSE 9000 6001
+CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
 

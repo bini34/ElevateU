@@ -4,10 +4,11 @@ import React from 'react';
 import ChatImageGallery from './ChatImageGallery';
 
 const ChatAttachment = ({ content }) => {
-  const isImage = content.mime.startsWith('image/');
+  const isImage = (content.mime || '').startsWith('image/');
+  const fileUrl = content.url || content.path;
 
   if (isImage) {
-    return <ChatImageGallery content={{ images: [{ url: content.path, alt: content.name }] }} />;
+    return <ChatImageGallery content={{ images: [{ url: fileUrl, alt: content.name }] }} />;
   }
 
   return (
@@ -22,7 +23,7 @@ const ChatAttachment = ({ content }) => {
             {(content.size / 1024 / 1024).toFixed(2)} MB • {content.mime.toUpperCase()}
           </span>
           <a
-            href={content.path}
+            href={fileUrl}
             download={content.name}
             className="text-blue-700 dark:text-blue-500 underline hover:no-underline font-medium"
           >
