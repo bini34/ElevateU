@@ -19,7 +19,7 @@ class GroupController extends Controller
         $this->groupService = $groupService;
     }
 
-    // Create a new group
+    // Create a new group owned by the authenticated user
     public function store(Request $request): JsonResponse
     {
         // Define validation rules
@@ -27,7 +27,6 @@ class GroupController extends Controller
             'name' => 'required|unique:groups,name',
             'description' => 'nullable|string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'owner_id' => 'required|exists:users,id', // Ensure owner_id exists in users table
         ]);
 
         // Check if validation fails
@@ -37,7 +36,8 @@ class GroupController extends Controller
             ], 422); // 422 Unprocessable Entity
         }
 
-        $groupData = $request->all();
+        $groupData = $request->only(['name', 'description']);
+        $groupData['owner_id'] = $request->user()->id; // never trust the body
         $profilePicture = $request->file('profile_picture');
 
         $group = $this->groupService->createGroup($groupData, $profilePicture);

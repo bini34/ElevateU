@@ -32,6 +32,12 @@ const AuthProvider = ({ children }) => {
     setAuthToken(token);
   };
 
+  // Refresh the stored user after profile edits (keeps the token untouched)
+  const updateUser = (userData) => {
+    localStorage.setItem('user', JSON.stringify(userData));
+    setAuthUser(userData);
+  };
+
   const logout = () => {
     // Revoke the token server-side (best effort), then clear local state
     signOut().catch(() => {});
@@ -43,7 +49,7 @@ const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ authUser, authToken, login, logout }}>
+    <AuthContext.Provider value={{ authUser, authToken, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

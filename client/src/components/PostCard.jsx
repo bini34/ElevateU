@@ -1,5 +1,6 @@
 "use client";
 import Image from 'next/image';
+import Link from 'next/link';
 import avator from '../../public/logo/logo.png';
 import { useContext, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -111,7 +112,13 @@ export default function PostCard({ post, onPostUpdated, onPostPatched, onPostDel
             alt={`${authorName(post.user)} avatar`}
           />
           <div className="font-normal flex-1">
-            <div className="text-sm">{authorName(post.user)}</div>
+            {post.user?.user_name ? (
+              <Link href={`/${post.user.user_name}`} className="text-sm hover:underline">
+                {authorName(post.user)}
+              </Link>
+            ) : (
+              <div className="text-sm">{authorName(post.user)}</div>
+            )}
             <div className="text-sm text-gray-500">
               {authorHandle(post.user)}
               {post.created_at && <span className="ml-2 text-xs text-gray-400">{timeAgo(post.created_at)}</span>}

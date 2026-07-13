@@ -111,6 +111,9 @@ export default function Signin() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+        <div className="flex justify-end">
+          <a href="/forget-password" className="text-sm text-red-400 hover:underline">Forgot your password?</a>
+        </div>
         <button
           className="bg-red-500 text-lg text-white w-full py-2 rounded-3xl hover:bg-red-400"
           disabled={loading}

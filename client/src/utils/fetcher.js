@@ -1,5 +1,20 @@
 import axios from 'axios';
-import { getToken } from '@/lib/token';
+import { getToken, removeToken } from '@/lib/token';
+
+// Endpoints where a 401 is an expected answer, not an expired session
+const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
+
+const handleUnauthorized = (url) => {
+  if (typeof window === 'undefined') return;
+  if (AUTH_PATHS.some((path) => url.startsWith(path))) return;
+
+  // Session expired or token revoked: clear it and send the user to sign in
+  removeToken();
+  localStorage.removeItem('user');
+  if (!window.location.pathname.startsWith('/signin')) {
+    window.location.assign('/signin');
+  }
+};
 
 // Axios-based fetcher used by the data hooks. Automatically attaches the
 // auth token and throws a normalized Error (with .status and .data) on
@@ -32,6 +47,10 @@ export const fetcher = async (url, options = {}) => {
 
     return response.data;
   } catch (error) {
+    if (error.response?.status === 401) {
+      handleUnauthorized(url);
+    }
+
     const serverMessage = error.response?.data?.message;
     const message = Array.isArray(serverMessage)
       ? serverMessage.join(' ')

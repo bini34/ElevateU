@@ -2,65 +2,101 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Profile;
-use App\Http\Requests\StoreProfileRequest;
-use App\Http\Requests\UpdateProfileRequest;
+use App\Models\Post;
+use App\Models\User;
+use App\Repositories\ProfileRepository;
+use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use ApiResponse;
+
+    protected $profileRepository;
+
+    public function __construct(ProfileRepository $profileRepository)
     {
-        //
+        $this->profileRepository = $profileRepository;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Public profile by user_name (used by the /{name} page).
      */
-    public function create()
+    public function show(string $userName): JsonResponse
     {
-        //
+        $user = User::where('user_name', $userName)
+            ->with('profile')
+            ->firstOrFail();
+
+        $postsCount = Post::where('user_id', $user->id)->count();
+
+        return $this->successResponse([
+            'user' => $user,
+            'posts_count' => $postsCount,
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Update the authenticated user's own profile.
      */
-    public function store(StoreProfileRequest $request)
+    public function update(Request $request): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'first_name' => 'sometimes|required|string|max:255',
+            'last_name' => 'sometimes|required|string|max:255',
+            'bio' => 'nullable|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'birthdate' => 'nullable|date|before:today',
+        ]);
+
+        $profile = $this->profileRepository->updateProfile($request->user()->id, $validated);
+
+        if (!$profile) {
+            return $this->errorResponse('Profile not found', 404);
+        }
+
+        return $this->successResponse(
+            ['user' => $request->user()->load('profile')],
+            'Profile updated successfully'
+        );
     }
 
     /**
-     * Display the specified resource.
+     * Upload a new avatar for the authenticated user.
      */
-    public function show(Profile $profile)
+    public function uploadAvatar(Request $request): JsonResponse
     {
-        //
-    }
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Profile $profile)
-    {
-        //
-    }
+        $file = $request->file('avatar');
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = Storage::disk('public')->putFileAs('uploads/avatars', $file, $filename);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateProfileRequest $request, Profile $profile)
-    {
-        //
-    }
+        if ($path === false) {
+            return $this->errorResponse('Could not store the avatar', 500);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Profile $profile)
-    {
-        //
+        $url = Storage::disk('public')->url($path);
+
+        $previous = $request->user()->profile?->profile_picture_URL;
+
+        $this->profileRepository->updateProfile($request->user()->id, [
+            'profile_picture_URL' => $url,
+        ]);
+
+        // Best-effort cleanup of the previous avatar file
+        if ($previous && str_contains($previous, '/storage/uploads/avatars/')) {
+            Storage::disk('public')->delete('uploads/avatars/' . basename($previous));
+        }
+
+        return $this->successResponse(
+            ['user' => $request->user()->fresh()->load('profile')],
+            'Avatar updated successfully'
+        );
     }
 }

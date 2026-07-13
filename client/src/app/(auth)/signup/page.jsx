@@ -128,7 +128,7 @@ export default function Signup() {
             </div>
             <label className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Remember me</label>
           </div>
-          <a className='text-base text-[#bfdaf9]' href="#"> Forget your password</a>
+          <a className='text-base text-red-400 hover:underline' href="/forget-password"> Forgot your password?</a>
         </div>
 
         {formError && (
