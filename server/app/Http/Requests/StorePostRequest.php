@@ -17,15 +17,17 @@ class StorePostRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * The author is always the authenticated user, so no user_id is accepted
+     * from the request body.
+     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'content' => 'required_without:file|string',
-            'file' => 'required_without:content|nullable|array', // Ensures 'file' is an array
-            'file.*' => 'mimes:jpeg,png,jpg,gif,mp4,avi,mov|max:20480', // Validates each file in the array
-            'user_id' => 'required|string|exists:users,id',
+            'content' => 'required_without:file|nullable|string|max:5000',
+            'file' => 'required_without:content|nullable|array|max:10',
+            'file.*' => 'file|mimes:jpeg,png,jpg,gif,webp,mp4,avi,mov|max:20480',
         ];
     }
 }

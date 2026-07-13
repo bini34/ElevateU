@@ -2,65 +2,68 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Comment;
-use App\Http\Requests\StoreCommentRequest;
-use App\Http\Requests\UpdateCommentRequest;
+use App\Services\CommentService;
+use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use ApiResponse;
+
+    protected $commentService;
+
+    public function __construct(CommentService $commentService)
     {
-        //
+        $this->commentService = $commentService;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * List comments for a post, oldest first.
      */
-    public function create()
+    public function index(Request $request, $id): JsonResponse
     {
-        //
+        $perPage = min((int) $request->input('per_page', 10), 50);
+        $comments = $this->commentService->getForPost($id, $perPage);
+
+        return $this->successResponse($comments);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Comment on a post as the authenticated user.
      */
-    public function store(StoreCommentRequest $request)
+    public function store(Request $request, $id): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'content' => 'required|string|max:2000',
+        ]);
+
+        $comment = $this->commentService->create($id, $request->user()->id, $validated['content']);
+
+        return $this->successResponse(['comment' => $comment], 'Comment added successfully', 201);
     }
 
     /**
-     * Display the specified resource.
+     * Edit the authenticated user's own comment.
      */
-    public function show(Comment $comment)
+    public function update(Request $request, $id): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'content' => 'required|string|max:2000',
+        ]);
+
+        $comment = $this->commentService->update($id, $request->user()->id, $validated['content']);
+
+        return $this->successResponse(['comment' => $comment], 'Comment updated successfully');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Delete a comment (comment author or post owner).
      */
-    public function edit(Comment $comment)
+    public function destroy(Request $request, $id): JsonResponse
     {
-        //
-    }
+        $this->commentService->delete($id, $request->user()->id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCommentRequest $request, Comment $comment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Comment $comment)
-    {
-        //
+        return $this->successResponse(['message' => 'Comment deleted successfully']);
     }
 }

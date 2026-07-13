@@ -36,17 +36,7 @@ class Comment extends Model
         'user_id',
         'post_id',
     ];
-    protected static function boot()
-    {
-        parent::boot();
 
-        // Automatically generate UUID for the 'id' field if it's not already set.
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
-            }
-        });
-    }
     /**
      * Get the user who authored the comment.
      */

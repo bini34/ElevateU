@@ -2,68 +2,40 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Like;
-use App\Http\Requests\StoreLikeRequest;
-use App\Http\Requests\UpdateLikeRequest;
+use App\Services\LikeService;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class LikeController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    protected $likeService;
+
+    public function __construct(LikeService $likeService)
     {
-        //
+        $this->likeService = $likeService;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Toggle the authenticated user's like on a post.
      */
-    public function create()
+    public function toggle(Request $request, $id): JsonResponse
     {
-        //
+        $result = $this->likeService->toggle($id, $request->user()->id);
+
+        return $this->successResponse($result, $result['liked'] ? 'Post liked' : 'Post unliked');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * List the users who liked a post.
      */
-    public function store(StoreLikeRequest $request)
+    public function index(Request $request, $id): JsonResponse
     {
-        //
-    }
+        $perPage = min((int) $request->input('per_page', 20), 50);
+        $likes = $this->likeService->getLikers($id, $perPage);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Like $like)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Like $like)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateLikeRequest $request, Like $like)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Like $like)
-    {
-        //
+        return $this->successResponse($likes);
     }
 }

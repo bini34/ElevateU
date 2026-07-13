@@ -1,56 +1,75 @@
-// Import the fetcher utility
-import fetcher from '../utils/fetcher';
-// Function to create a new post
-export const createPost = async (postData) => {
-  return await fetcher('/posts', 'POST', postData);
+import { fetcher } from '../utils/fetcher';
+
+// API layer for the feed. Every function returns the parsed
+// { status, message, data } body and throws on failure.
+
+// Create a post. Accepts FormData with `content` and `file[]` entries.
+export const createPost = async (formData) => {
+  return await fetcher('/post', { method: 'POST', body: formData });
 };
 
-// Function to get all posts
-export const getPosts = async () => {
-  return await fetcher('/posts', 'GET');
+// Paginated feed
+export const getPosts = async (page = 1) => {
+  return await fetcher(`/posts?page=${page}`);
 };
 
-// Function to get a specific post by ID
+// Single post with details
 export const getPostById = async (id) => {
-  return await fetcher(`/posts/${id}`, 'GET');
+  return await fetcher(`/posts/${id}`);
 };
 
-// Function to update a specific post
-export const updatePost = async (userId, postId, postData) => {
-  return await fetcher(`/user/${userId}/post/${postId}`, 'PUT', postData);
+// Update own post's content
+export const updatePost = async (postId, content) => {
+  return await fetcher(`/posts/${postId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
 };
 
-// Function to delete a specific post
+// Delete own post
 export const deletePost = async (postId) => {
-  return await fetcher(`/post/${postId}`, 'DELETE');
+  return await fetcher(`/post/${postId}`, { method: 'DELETE' });
 };
 
-// Function to get all posts for a specific user
-export const getUserPosts = async (userId, page) => {
-  return await fetcher(`/user/${userId}/posts?page=${page}`, 'GET');
+// Posts of a specific user
+export const getUserPosts = async (userId, page = 1) => {
+  return await fetcher(`/user/${userId}/posts?page=${page}`);
 };
 
-// Function to like a specific post
-export const likePost = async (postId) => {
-  return await fetcher(`/posts/${postId}/like`, 'POST');
+// Toggle like; resolves to { liked, likes_count } in data
+export const toggleLike = async (postId) => {
+  return await fetcher(`/posts/${postId}/like`, { method: 'POST' });
 };
 
-// Function to get all likes for a post
-export const getPostLikes = async (postId) => {
-  return await fetcher(`/posts/${postId}/likes`, 'GET');
+// Users who liked a post
+export const getPostLikes = async (postId, page = 1) => {
+  return await fetcher(`/posts/${postId}/likes?page=${page}`);
 };
 
-// Function to comment on a specific post
-export const commentOnPost = async (postId, commentData) => {
-  return await fetcher(`/posts/${postId}/comments`, 'POST', commentData);
+// Comments
+export const getPostComments = async (postId, page = 1) => {
+  return await fetcher(`/posts/${postId}/comments?page=${page}`);
 };
 
-// Function to get all comments for a post
-export const getPostComments = async (postId) => {
-  return await fetcher(`/posts/${postId}/comments`, 'GET');
+export const addComment = async (postId, content) => {
+  return await fetcher(`/posts/${postId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
 };
 
-// Function to search for posts
-export const searchPosts = async (query) => {
-  return await fetcher(`/posts/search?query=${query}`, 'GET');
+export const updateComment = async (commentId, content) => {
+  return await fetcher(`/comments/${commentId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
+};
+
+export const deleteComment = async (commentId) => {
+  return await fetcher(`/comments/${commentId}`, { method: 'DELETE' });
+};
+
+// Search
+export const searchPosts = async (query, page = 1) => {
+  return await fetcher(`/posts/search?query=${encodeURIComponent(query)}&page=${page}`);
 };

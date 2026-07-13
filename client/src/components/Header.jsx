@@ -1,39 +1,43 @@
 'use client';
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import avator from '../../public/images/avator.png';
 import { usePost } from '../hooks/usePost';
 import { AuthContext } from '@/context/AuthContext';
-export default function Header() {
+
+export default function Header({ onPostCreated }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [content, setContent] = useState('');
-    const { post, loading, error } = usePost();
+    const { post, loading } = usePost();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { authUser, logout } = useContext(AuthContext);
     const menuRef = useRef(null);
     const router = useRouter();
-    // // Fetch user data from cookies
-    // useEffect(() => {
-    //     if (authUser) {
-    //         console.log("auth user from header", authUser);
-    //         setUser({
-    //             id: authUser.id,
-    //             firstName: authUser.profile.first_name,
-    //             lastName: authUser.profile.last_name,
-    //             avatar: authUser.profile.profile_picture_url || avator, // Fallback to default avatar if not available
-    //         });
-    //         console.log("user from header", user);
-    //     }
-    // }, []);
+
+    // Object URLs for previews, recreated only when the selection changes
+    const previews = useMemo(
+        () =>
+            uploadedFiles.map((file) => ({
+                key: `${file.name}-${file.lastModified}`,
+                url: URL.createObjectURL(file),
+                isImage: file.type.startsWith('image/'),
+                type: file.type,
+            })),
+        [uploadedFiles]
+    );
+    useEffect(() => {
+        return () => previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    }, [previews]);
 
     const toggleModal = () => {
         setIsModalOpen(!isModalOpen);
     };
 
     const handleFileChange = (event) => {
-        const files = Array.from(event.target.files);
+        const files = Array.from(event.target.files).slice(0, 10);
         setUploadedFiles(files);
     };
 
@@ -44,17 +48,20 @@ export default function Header() {
     };
 
     const handleSubmit = async () => {
-        const userId = authUser.id; // Replace with actual user ID
-        console.log("content before post ", content);
-        const response = await post(content, uploadedFiles, userId);
-        if (response) {
-            console.log('Post successful:', response);
+        if (!content.trim() && uploadedFiles.length === 0) {
+            toast.error('Write something or add a photo first.');
+            return;
+        }
+
+        const createdPost = await post(content.trim(), uploadedFiles);
+        if (createdPost) {
             setContent('');
             setUploadedFiles([]);
-            toggleModal();
-        }
-        else {
-            console.log('Post failed:', error);
+            setIsModalOpen(false);
+            toast.success('Post created!');
+            onPostCreated?.(createdPost);
+        } else {
+            toast.error('Could not create the post. Please try again.');
         }
     };
 
@@ -108,9 +115,9 @@ export default function Header() {
                             width={30}
                             height={30}
                             src={authUser?.profile?.profile_picture_URL || avator } // User avatar or fallback to default
-                            alt={`${authUser?.profile?.first_name} ${authUser?.profile?.last_name}`}
+                            alt="Your avatar"
                         />
-                        <span>{`${authUser?.profile?.first_name} ${authUser?.profile?.last_name}`}</span>
+                        <span>{`${authUser?.profile?.first_name ?? ''} ${authUser?.profile?.last_name ?? ''}`.trim() || authUser?.user_name || ''}</span>
                     </div>
                     {isMenuOpen && (
                        <div className="absolute top-12  w-56 bg-white rounded-xl shadow-lg z-50 transform opacity-100 scale-100 transition-all duration-200 ease-out border border-gray-100">
@@ -138,8 +145,8 @@ export default function Header() {
                     <div className="bg-white p-6 rounded shadow-lg w-[500px]">
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center">
-                                <Image className="rounded-full" width={40} height={40} src={authUser?.profile.avatar || avator} alt="Profile" />
-                                <span className="ml-2 font-bold">{`${authUser?.profile?.first_name} ${authUser?.profile?.last_name}`}</span>
+                                <Image className="rounded-full" width={40} height={40} src={authUser?.profile?.profile_picture_URL || avator} alt="Profile" />
+                                <span className="ml-2 font-bold">{`${authUser?.profile?.first_name ?? ''} ${authUser?.profile?.last_name ?? ''}`.trim() || authUser?.user_name || ''}</span>
                             </div>
                             <button onClick={toggleModal} className="text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-200 px-3 py-1">
                                 &times;
@@ -147,19 +154,21 @@ export default function Header() {
                         </div>
                         <textarea
                             className="w-full p-2 border rounded custom-input"
-                            placeholder={`What's on your mind, ${authUser?.profile?.first_name}`}
+                            placeholder={`What's on your mind${authUser?.profile?.first_name ? `, ${authUser.profile.first_name}` : ''}?`}
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
+                            maxLength={5000}
                             rows="4"
                         ></textarea>
                         <div className="mt-4 w-full grid grid-cols-3 gap-2">
-                            {uploadedFiles.map((file, index) => (
-                                <div key={index} className="mt-2">
-                                    {file.type.startsWith('image/') ? (
-                                        <Image src={URL.createObjectURL(file)} alt="Preview" width={100} height={100} className="rounded" />
+                            {previews.map((preview) => (
+                                <div key={preview.key} className="mt-2">
+                                    {preview.isImage ? (
+                                        // eslint-disable-next-line @next/next/no-img-element -- local blob preview, not optimizable
+                                        <img src={preview.url} alt="Preview" className="w-[100px] h-[100px] object-cover rounded" />
                                     ) : (
                                         <video controls className="w-[100px] h-auto rounded">
-                                            <source src={URL.createObjectURL(file)} type={file.type} />
+                                            <source src={preview.url} type={preview.type} />
                                             Your browser does not support the video tag.
                                         </video>
                                     )}
@@ -168,12 +177,20 @@ export default function Header() {
                         </div>
                         <div className="flex justify-between items-center mt-4">
                             <div className="flex space-x-2">
-                                <label className="p-2 rounded cursor-pointer">
-                                    <Image className="x1b0d499 xl1xv1r" alt="" src="https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/Ivw7nhRtXyo.png" width={24} height={24} />
+                                <label className="p-2 rounded cursor-pointer text-gray-600 hover:text-black" aria-label="Add photos or videos">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <path d="M21 15l-5-5L5 21"/>
+                                    </svg>
                                     <input type="file" multiple accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
                                 </label>
                             </div>
-                            <button className="px-4 py-2 bg-black text-white rounded" onClick={handleSubmit}>
+                            <button
+                                className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
+                                onClick={handleSubmit}
+                                disabled={loading || (!content.trim() && uploadedFiles.length === 0)}
+                            >
                                {loading ? "Posting..." : "Post"}
                             </button>
                         </div>

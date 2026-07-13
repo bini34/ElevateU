@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y \
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring gd
 
+# PHP upload limits for post/message media
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
