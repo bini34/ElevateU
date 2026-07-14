@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SocialLoginController;
 use Illuminate\Support\Facades\Route;
@@ -29,4 +30,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/profiles/{userName}', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar']);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
 });

@@ -19,5 +19,6 @@ export const config = {
     '/settings/:path*',
     '/create-post',
     '/post/:path*',
+    '/notifications',
   ],
 };

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\User;
+use App\Notifications\ActivityNotification;
 use App\Repositories\LikeRepository;
 use App\Repositories\PostRepository;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -27,7 +29,7 @@ class LikeService
     public function toggle(string $postId, string $userId): array
     {
         // Ensure the post exists (404 via findOrFail if not)
-        $this->postRepository->find($postId);
+        $post = $this->postRepository->find($postId);
 
         $existing = $this->likeRepository->findByPostAndUser($postId, $userId);
 
@@ -37,6 +39,13 @@ class LikeService
         } else {
             try {
                 $this->likeRepository->create($postId, $userId);
+
+                // Tell the post's owner, unless they liked their own post
+                if ($post->user_id !== $userId) {
+                    $post->user?->notify(
+                        ActivityNotification::postLiked(User::findOrFail($userId), $post->id)
+                    );
+                }
             } catch (UniqueConstraintViolationException $e) {
                 // A concurrent request already created the like; keep it.
             }

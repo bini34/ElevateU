@@ -2,7 +2,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import avator from "../../../public/logo/logo.png";
 import { AuthContext } from "@/context/AuthContext";
 import { usePost } from "@/hooks/usePost";
@@ -62,7 +62,6 @@ export default function CreatePost() {
 
     return (
         <div className="bg-white p-6 w-full min-h-screen max-w-[600px] mx-auto">
-            <Toaster />
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center">
                     <Image

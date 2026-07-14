@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\User;
+use App\Notifications\ActivityNotification;
 use App\Repositories\CommentRepository;
 use App\Repositories\PostRepository;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -26,13 +28,20 @@ class CommentService
 
     public function create(string $postId, string $userId, string $content)
     {
-        $this->postRepository->find($postId);
+        $post = $this->postRepository->find($postId);
 
         $comment = $this->commentRepository->create([
             'post_id' => $postId,
             'user_id' => $userId,
             'content' => $content,
         ]);
+
+        // Tell the post's owner, unless they commented on their own post
+        if ($post->user_id !== $userId) {
+            $post->user?->notify(
+                ActivityNotification::postCommented(User::findOrFail($userId), $post->id, $content)
+            );
+        }
 
         return $this->commentRepository->findWithAuthor($comment->id);
     }

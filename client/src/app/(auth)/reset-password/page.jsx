@@ -2,7 +2,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { resetPassword } from '@/lib/profile';
 
 function ResetPasswordForm() {
@@ -107,7 +107,6 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
     return (
         <div className="w-full max-w-md flex flex-col mx-auto my-16 justify-center gap-4 px-5">
-            <Toaster />
             <h1 className="text-3xl font-bold">
                 <span className="text-red-500">Choose</span> a new password
             </h1>

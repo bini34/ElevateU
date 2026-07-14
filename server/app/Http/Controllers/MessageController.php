@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageSent;
 use App\Events\MessagesRead;
+use App\Models\User;
+use App\Notifications\ActivityNotification;
 use App\Services\MessageService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +52,20 @@ class MessageController extends Controller
         // emit the message a second time. toOthers() keeps the sender's own
         // socket (X-Socket-ID header) from receiving its echo.
         if ($result['created']) {
-            broadcast(new MessageSent($result['message']))->toOthers();
+            $message = $result['message'];
+            broadcast(new MessageSent($message))->toOthers();
+
+            // Notify the receiver of direct messages (group chats rely on
+            // their own unread indicators instead of fan-out notifications)
+            if ($message->receiver_id) {
+                User::find($message->receiver_id)?->notify(
+                    ActivityNotification::newMessage(
+                        $request->user(),
+                        $message->conversation_id,
+                        $message->message
+                    )
+                );
+            }
         }
 
         return $this->successResponse(

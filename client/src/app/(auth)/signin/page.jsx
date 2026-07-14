@@ -4,7 +4,7 @@ import { useState, useContext } from "react";
 // import { useSignIn } from "@/hooks/useSignIn";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { signIn } from "@/lib/auth";
 
 export default function Signin() {
@@ -52,7 +52,6 @@ export default function Signin() {
 
   return (
     <div className="w-[500px] flex flex-col mx-auto my-5 justify-center gap-3 px-5 xxs:px-15 md:w-[500px]">
-      <Toaster />
       <div className="flex justify-center">
         <Image src="/logo/logo.png" alt="Logo" width={100} height={100} />
       </div>

@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react';
 import Link from 'next/link';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { forgotPassword } from '@/lib/profile';
 
 export default function ForgetPassword() {
@@ -25,7 +25,6 @@ export default function ForgetPassword() {
 
   return (
     <div className="w-full max-w-md flex flex-col mx-auto my-16 justify-center gap-4 px-5">
-      <Toaster />
       <h1 className="text-3xl font-bold">
         <span className="text-red-500">Forgot</span> your password?
       </h1>
