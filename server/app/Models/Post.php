@@ -29,9 +29,17 @@ class Post extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id', 
+        'user_id',
         'content'
     ];
+
+    /**
+     * Timestamps carry microseconds (timestamp(6) columns) so same-second
+     * posts keep a stable feed order.
+     *
+     * @var string
+     */
+    protected $dateFormat = 'Y-m-d H:i:s.u';
 
     /**
      * Define the relationship between a post and its user.

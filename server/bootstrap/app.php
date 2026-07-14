@@ -24,8 +24,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ['prefix' => 'api', 'middleware' => ['api', 'auth:api']]
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Applies throttle:api (see RateLimiter::for('api')) to the api
+        // group, which every route file in this app is registered under.
+        $middleware->throttleApi();
+
+        // Pure API: guests get a 401 instead of a redirect to a login page
+        // that doesn't exist.
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // This is a pure API: always render JSON errors for /api requests
+        // (an unauthenticated HTML request would otherwise try to redirect
+        // to a web login route that doesn't exist).
+        $exceptions->shouldRenderJsonWhen(function ($request) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
     })->create();

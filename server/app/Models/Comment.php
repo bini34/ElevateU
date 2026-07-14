@@ -38,6 +38,14 @@ class Comment extends Model
     ];
 
     /**
+     * Timestamps carry microseconds (timestamp(6) columns) so same-second
+     * comments keep a stable thread order.
+     *
+     * @var string
+     */
+    protected $dateFormat = 'Y-m-d H:i:s.u';
+
+    /**
      * Get the user who authored the comment.
      */
     public function user()

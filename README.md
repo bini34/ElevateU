@@ -1,75 +1,158 @@
-![Logo](https://github.com/bini34/ElevateU/client/public/logo/logo.png)
 # ElevateU
 
-## Overview
-ElevateU is a social media platform designed to connect users and facilitate social interactions.
+A social media platform: feed with posts, likes and comments, real-time
+direct & group chat, live notifications, and user profiles.
 
-## Repository Details
-- Repository: [bini34/ElevateU](https://github.com/bini34/ElevateU)
-- Repository ID: 784692318
+| Layer     | Stack |
+|-----------|-------|
+| Client    | Next.js 15 (App Router), React 18, Tailwind CSS |
+| API       | Laravel 11, Laravel Passport (bearer tokens) |
+| Realtime  | Laravel Reverb (Pusher protocol over WebSockets) + Laravel Echo |
+| Database  | MySQL 8 |
+| Dev infra | Docker Compose (php-fpm + nginx + MySQL + Reverb + queue worker) |
 
-## Language Composition
-- PHP: 47.8%
-- JavaScript: 37.9%
-- Blade: 12.3%
-- TypeScript: 1.3%
-- Other: 0.7%
+## Features
 
-## Getting Started
+- **Auth** — register, login, logout, change password (revokes other
+  sessions), email-based password reset, protected routes, expired-session
+  handling. Personal access tokens expire after 30 days.
+- **Feed** — infinite scroll, newest-first, optimistic likes with per-user
+  state, comments (create / edit / delete by author or post owner),
+  create posts with up to 10 images/videos, edit & delete own posts.
+- **Chat** — real-time direct messages with delivery over WebSockets,
+  automatic reconnection with gap-fill, typing indicators (whispers),
+  online presence, read receipts, idempotent sends (`client_uuid` — a
+  retry can never duplicate a message), paginated history, group chat.
+- **Notifications** — real-time on likes, comments and direct messages;
+  unread badges, mark-read/mark-all, toast on arrival.
+- **Profiles** — public profile pages (`/{username}`) with the user's
+  posts, avatar upload, bio/location/birthday editing.
 
-### Client (Next.js)
-This is a [Next.js](https://nextjs.org) project bootstrapped with `create-next-app`.
+## Getting started (development)
 
-To get started with the client:
+Prerequisites: Docker Desktop and Node.js ≥ 20. PHP is **not** required on
+the host — every artisan command runs inside the container.
 
-1. Install dependencies:
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
+### 1. API stack
 
-2. Run the development server:
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    ```
+```bash
+cd server
+cp .env.example .env          # then fill in values (see Environment below)
+docker compose up -d --build
+docker compose exec laravel-app composer install
+docker compose exec laravel-app php artisan key:generate
+docker compose exec laravel-app php artisan migrate
+docker compose exec laravel-app php artisan passport:keys
+docker compose exec laravel-app php artisan passport:client --personal
+# copy the printed Client ID/secret into .env as
+# PASSPORT_PERSONAL_ACCESS_CLIENT_ID / PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET
+docker compose exec laravel-app php artisan storage:link
+```
 
-3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The API is served by nginx at **http://localhost:8080** (routes under
+`/api`), websockets at **ws://localhost:6001**, MySQL on host port 3307.
+The app container runs php-fpm, Reverb and a queue worker under
+supervisord (`docker compose exec laravel-app supervisorctl status`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Client
 
-### Server (Laravel)
-ElevateU's server-side is built with Laravel.
+```bash
+cd client
+cp .env.example .env.local    # defaults match the docker stack
+npm install
+npm run dev                   # http://localhost:3000
+```
 
-To get started with the server:
+## Environment
 
-1. Install dependencies:
-    ```bash
-    composer install
-    ```
+Server (`server/.env`) — beyond the Laravel defaults:
 
-2. Set up your environment variables by copying `.env.example` to `.env` and updating the necessary values.
+| Variable | Purpose |
+|----------|---------|
+| `APP_URL` | Public origin of the API (`http://localhost:8080`); storage URLs derive from it |
+| `FRONTEND_URL` | Where password-reset links send users (`http://localhost:3000`) |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated origin allowlist; `*` for dev |
+| `PASSPORT_PERSONAL_ACCESS_CLIENT_ID` / `_SECRET` | From `passport:client --personal` |
+| `REVERB_APP_ID` / `_KEY` / `_SECRET` | Reverb app credentials |
+| `REVERB_HOST` / `REVERB_PORT` / `REVERB_SCHEME` | Public websocket endpoint (`localhost` / `6001` / `http` in dev) |
 
-3. Generate an application key:
-    ```bash
-    php artisan key:generate
-    ```
+Client (`client/.env.local`):
 
-4. Run the development server:
-    ```bash
-    php artisan serve
-    ```
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_BACKEND_URL` | API base **including** `/api` (`http://localhost:8080/api`) |
+| `NEXT_PUBLIC_REVERB_APP_KEY` | Must match the server's `REVERB_APP_KEY` |
+| `NEXT_PUBLIC_REVERB_HOST` / `_PORT` / `_SCHEME` | Websocket endpoint (`localhost` / `6001` / `http`) |
 
-## Learn More
+## Testing
 
-To learn more about the frameworks used in ElevateU, visit:
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Laravel Documentation](https://laravel.com/docs)
+End-to-end suites exercise the running docker stack over real HTTP and
+WebSockets (126 assertions total):
 
-## Contributing
-Thank you for considering contributing to ElevateU! Please read the [contributing guidelines](https://laravel.com/docs/contributions) to get started.
+```bash
+node scripts/feed-e2e.mjs           # posts, likes, comments, uploads, ownership (51)
+node scripts/chat-e2e.mjs           # messaging incl. live websocket delivery (32)
+node scripts/profile-e2e.mjs        # profiles, avatar, password flows (23)
+node scripts/notifications-e2e.mjs  # live notifications, unread counts (20)
+```
+
+Each run registers throwaway users with `...@example.com` emails; remove
+them with
+`DELETE FROM users WHERE email LIKE '%@example.com'` when they clutter
+the chat list.
+
+Client production build (must pass with zero errors):
+
+```bash
+cd client && npm run build
+```
+
+## Architecture
+
+```
+client/src
+  app/            Next.js routes (feed, chat, groups, profile, settings, auth)
+  components/     UI components (PostCard, chat bubbles, notification bell, ...)
+  context/        AuthContext, NotificationContext, DataContext
+  hooks/          echo (websocket singleton), usePosts, useOnlineUsers, ...
+  lib/            API layers per feature (post, message, profile, notifications)
+  utils/fetcher   axios wrapper: bearer token, X-Socket-Id, 401 handling
+
+server/app
+  Http/Controllers   thin controllers (validation + auth identity)
+  Services           domain logic & authorization (ownership, membership)
+  Repositories       query layer (eager loading, pagination)
+  Events             MessageSent / MessagesRead (broadcast now)
+  Notifications      ActivityNotification (database + broadcast)
+```
+
+Realtime channels: `conversations.{id}` (private, participants),
+`groups.{id}` (private, members), `online` (presence),
+`App.Models.User.{id}` (private, notifications). Channel auth lives in
+`server/routes/channels.php`; typing indicators are client whispers and
+never touch the server.
+
+The full endpoint list is in [docs/API.md](docs/API.md).
+
+## Deploying to production
+
+1. **Secrets**: generate fresh `APP_KEY`, Reverb credentials and OAuth
+   secrets; never commit `.env` (images exclude it via `.dockerignore`).
+2. **Server env**: `APP_ENV=production`, `APP_DEBUG=false`, real `APP_URL`
+   and `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS=https://your-client-origin`,
+   `REVERB_SCHEME=https`.
+3. **Server image**: `docker build -t elevateu-api server/` — runs
+   php-fpm + Reverb (:6001) + queue worker under supervisord; put nginx
+   (see `server/nginx/default.conf`) in front for `/api` and `/storage`,
+   and terminate TLS + proxy websockets to :6001.
+4. **One-time provisioning** inside the container: `php artisan migrate`,
+   `passport:keys`, `passport:client --personal`, `storage:link`.
+5. **Client image**: build with your public values baked in —
+   see the build-args header in `client/Dockerfile`. Runs `node server.js`
+   (standalone) on :3000 as a non-root user.
+6. Persist `storage/app/public` (uploads) and the MySQL data volume; use a
+   non-root MySQL user with a strong password.
 
 ## License
-ElevateU is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+MIT — see [LICENSE.txt](LICENSE.txt).

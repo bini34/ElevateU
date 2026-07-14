@@ -36,7 +36,7 @@ class PostRepository
     public function getAllPostsWithDetails($perPage = 10, ?string $viewerId = null)
     {
         return $this->withDetails($this->post->newQuery(), $viewerId)
-            ->latest()
+            ->latest()->orderByDesc('id')
             ->paginate($perPage);
     }
 
@@ -44,7 +44,7 @@ class PostRepository
     {
         return $this->withDetails($this->post->newQuery(), $viewerId)
             ->where('user_id', $userId)
-            ->latest()
+            ->latest()->orderByDesc('id')
             ->paginate($perPage);
     }
 
@@ -52,7 +52,7 @@ class PostRepository
     {
         return $this->withDetails($this->post->newQuery(), $viewerId)
             ->where('content', 'like', '%' . addcslashes($term, '%_\\') . '%')
-            ->latest()
+            ->latest()->orderByDesc('id')
             ->paginate($perPage);
     }
 

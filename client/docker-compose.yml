@@ -1,20 +1,20 @@
-
+# Development compose for the client: runs the dev server against the
+# API stack from ../server (which publishes ports on localhost).
+# For production use the Dockerfile directly (standalone build).
 
 services:
   nextjs-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: node:20-alpine
     container_name: ElevateU-Client
+    working_dir: /app
     volumes:
       - .:/app
     ports:
       - "3000:3000"
-    command: npm run dev
-    networks:
-      - laravel_network  # Use the same network as Laravel API
+    command: sh -c "npm install && npm run dev"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080/ # Point to the Laravel service by name, not localhost
-
-networks:
-  laravel_network: {} 
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080/api
+      - NEXT_PUBLIC_REVERB_APP_KEY=${NEXT_PUBLIC_REVERB_APP_KEY:-ls7yo6wrxrmbtvuv86qo}
+      - NEXT_PUBLIC_REVERB_HOST=localhost
+      - NEXT_PUBLIC_REVERB_PORT=6001
+      - NEXT_PUBLIC_REVERB_SCHEME=http

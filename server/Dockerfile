@@ -25,19 +25,28 @@ COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy project files
+# Copy project files (.dockerignore keeps .env, vendor and uploads out)
 COPY . /var/www/html
 
-# Install Laravel dependencies
-RUN composer install
+# Install Laravel dependencies (dev deps excluded from the image; the dev
+# docker-compose bind mount re-runs composer install with dev deps anyway).
+# Scripts are skipped during install because there is no .env at build
+# time; package discovery then runs with safe drivers.
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    && mkdir -p storage/framework/cache/data storage/framework/sessions \
+                storage/framework/views storage/framework/testing storage/logs \
+    && BROADCAST_CONNECTION=log CACHE_STORE=array SESSION_DRIVER=array QUEUE_CONNECTION=sync \
+       php artisan package:discover --ansi
 
 # Set file permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Supervisor runs php-fpm, the Reverb websocket server and the queue worker
 COPY supervisord.conf /etc/supervisor/conf.d/app.conf
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # 9000 = php-fpm (nginx upstream), 6001 = Reverb websockets
 EXPOSE 9000 6001
-CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["/usr/local/bin/entrypoint.sh"]
 
