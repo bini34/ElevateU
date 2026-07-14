@@ -1,25 +1,23 @@
 "use client"
-import { useState, useEffect } from 'react';
-import { useGroup } from '../hooks/useGroup'; // Import the useGroup hook
+import { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useGroup } from '../hooks/useGroup';
 
-export default function CreateGroup({ setIsModalOpen }) {
+export default function CreateGroup({ setIsModalOpen, onCreated }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [profileImage, setProfileImage] = useState(null);
-    const { Group, loading, error } = useGroup(); // Destructure Group from useGroup
-    const [successMessage, setSuccessMessage] = useState(null); // State for success message
+    const [profileFile, setProfileFile] = useState(null);
+    const { createGroup, loading } = useGroup();
 
+    const previewUrl = useMemo(
+        () => (profileFile ? URL.createObjectURL(profileFile) : null),
+        [profileFile]
+    );
     useEffect(() => {
-        if (error) {
-            alert(`Error: ${error}`); // Simple alert for error
-        }
-    }, [error]);
-
-    useEffect(() => {
-        if (successMessage) {
-            alert(`Success: ${successMessage}`); // Simple alert for success
-        }
-    }, [successMessage]);
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
@@ -27,29 +25,24 @@ export default function CreateGroup({ setIsModalOpen }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        const response = await Group(name, profileImage, description);
-        if (response) {
-            setSuccessMessage('Group created successfully!');
-            setName('');
-            setDescription('');
-            setProfileImage(null);
+        const response = await createGroup(name.trim(), profileFile, description.trim());
+        if (response?.status === 'success') {
+            toast.success('Group created!');
+            onCreated?.();
             setIsModalOpen(false);
+        } else {
+            toast.error('Could not create the group. Please try again.');
         }
     };
 
     const handleImageChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfileImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (file) setProfileFile(file);
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-[500px] h-[500px] relative">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-[500px] max-w-[95vw] relative">
             <button onClick={handleCloseModal} className="absolute top-4 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
                 <svg className="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18 17.94 6M18 18 6.06 6"/>
@@ -59,14 +52,16 @@ export default function CreateGroup({ setIsModalOpen }) {
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                     <div className="relative flex justify-center w-24 h-24 mx-auto mb-2 rounded-full border-2 border-gray-300 overflow-hidden">
-                        {profileImage ? (
+                        {previewUrl ? (
                             <>
-                                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
+                                <img src={previewUrl} alt="Group avatar preview" className="w-full h-full object-cover" />
                                 <button
                                     onClick={(event) => {
                                         event.preventDefault();
                                         document.getElementById('profilePictureInput').click();
                                     }}
+                                    aria-label="Change group photo"
                                     className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 hover:opacity-100 transition-opacity"
                                 >
                                 </button>

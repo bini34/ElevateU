@@ -59,7 +59,7 @@ export default function Signup() {
   };
 
   return (
-    <div className='w-[500px] h-auto flex flex-col mx-auto my-5 justify-center gap-2 px-4 xxs:w-full md:w-[500px]'>
+    <div className='w-full max-w-[500px] h-auto flex flex-col mx-auto my-5 justify-center gap-2 px-4'>
       <div className='flex justify-center'>
         <Image src="/logo/logo.png" alt="logo" width={100} height={100}/> 
       </div>

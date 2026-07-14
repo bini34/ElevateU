@@ -1,14 +1,16 @@
 "use client"
 import Layout from '@/components/Layout';
-import GroupChatList from '@/components/GroupChatList'; // Ensure this is the correct import
-// import useChat from '../../hooks/useChat';
+import GroupChatList from '@/components/GroupChatList';
 import { useState } from 'react';
-// import { useGroup } from '@/hooks/useGroup';
+import { usePathname } from 'next/navigation';
 import CreateGroup from '@/components/CreateGroup';
 export default function GroupLayout({ children }) {
-
+  const pathname = usePathname();
+  // Mobile is master-detail: the list at /groups, the chat deeper
+  const inGroupChat = pathname !== '/groups';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [listVersion, setListVersion] = useState(0); // bump to refetch the list
   const handleButtonClick = () => {
     setIsModalOpen(true);
   };
@@ -16,8 +18,8 @@ export default function GroupLayout({ children }) {
 
   return (
     <Layout>
-      <div className="flex flex-col md:flex-row w-full min-h-screen rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 border-solid border-black bg-slate-300">
-        <div className="flex flex-col gap-4 max-h-screen w-full md:w-[300px] pt-20 pb-20">
+      <div className="flex flex-col md:flex-row w-full min-h-screen md:rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 md:border-solid md:border-black sm:bg-slate-300">
+        <div className={`${inGroupChat ? 'hidden md:flex' : 'flex'} flex-col gap-4 max-h-screen w-full md:w-[300px] md:pt-20 md:pb-20`}>
           <div className="flex">
             <form className="w-full px-2">
               <div className="relative">
@@ -37,10 +39,10 @@ export default function GroupLayout({ children }) {
           </div>
 
           <div className="flex-1 flex-col gap-4 overflow-y-auto no-scrollbar">
-            <GroupChatList />
+            <GroupChatList key={listVersion} />
           </div>
         </div>
-        <main className="w-full h-full flex flex-col justify-start pt-5 overflow-y-auto no-scrollbar bg-white rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 border-solid border-black relative bottom-[15px]">
+        <main className={`${inGroupChat ? 'flex' : 'hidden'} md:flex w-full h-full flex-col justify-start pt-5 overflow-y-auto no-scrollbar bg-white md:rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 md:border-solid md:border-black relative md:bottom-[15px]`}>
           {children}
         </main>
 
@@ -48,7 +50,7 @@ export default function GroupLayout({ children }) {
 
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <CreateGroup setIsModalOpen={setIsModalOpen} />
+          <CreateGroup setIsModalOpen={setIsModalOpen} onCreated={() => setListVersion((v) => v + 1)} />
         </div>
       )}
 

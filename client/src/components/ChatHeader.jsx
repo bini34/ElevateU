@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import avatar from '../../public/images/avator.png';
 
 function ChatHeader({ user, online = false, typing = false, connectionState = 'connected' }) {
@@ -13,8 +14,13 @@ function ChatHeader({ user, online = false, typing = false, connectionState = 'c
             : 'Offline';
 
     return (
-        <header className="relative top-0 right-0 left-0 px-7 w-full border-b border-gray-300 dark:border-gray-700 pb-5 shadow-md">
-            <div className="flex items-center gap-4 w-full">
+        <header className="relative top-0 right-0 left-0 px-4 md:px-7 w-full border-b border-gray-300 dark:border-gray-700 pb-5 shadow-md">
+            <div className="flex items-center gap-3 md:gap-4 w-full">
+                <Link href="/chat" aria-label="Back to chats" className="md:hidden p-2 -ml-2 rounded-full hover:bg-gray-100">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                </Link>
                 <div className="relative">
                     <Image
                         className="rounded-full"

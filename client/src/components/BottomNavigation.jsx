@@ -1,9 +1,11 @@
 "use client"
 import Link from 'next/link';
 import {  usePathname } from 'next/navigation';
+import { useNotifications } from '@/context/NotificationContext';
 
 const BottomNavigation = () => {
     const pathname = usePathname();
+    const { unreadCount } = useNotifications();
     const getNavItemClasses = (path) => {
         const isActive = pathname === path;
 
@@ -40,6 +42,18 @@ const BottomNavigation = () => {
                     <svg className="w-[28px] h-[28px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 6a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm-1.5 8a4 4 0 0 0-4 4 2 2 0 0 0 2 2h7a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-3Zm6.82-3.096a5.51 5.51 0 0 0-2.797-6.293 3.5 3.5 0 1 1 2.796 6.292ZM19.5 18h.5a2 2 0 0 0 2-2 4 4 0 0 0-4-4h-1.1a5.503 5.503 0 0 1-.471.762A5.998 5.998 0 0 1 19.5 18ZM4 7.5a3.5 3.5 0 0 1 5.477-2.889 5.5 5.5 0 0 0-2.796 6.293A3.501 3.501 0 0 1 4 7.5ZM7.1 12H6a4 4 0 0 0-4 4 2 2 0 0 0 2 2h.5a5.998 5.998 0 0 1 3.071-5.238A5.505 5.505 0 0 1 7.1 12Z" />
                     </svg>
+                </Link>
+            </li>
+            <li className={`${getNavItemClasses('/notifications')} relative`}>
+                <Link href="/notifications" aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}>
+                    <svg className="w-[28px] h-[28px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5.365V3m0 2.365a5.338 5.338 0 0 1 5.133 5.368v1.8c0 2.386 1.867 2.982 1.867 4.175 0 .593 0 1.292-.538 1.292H5.538C5 18 5 17.301 5 16.708c0-1.193 1.867-1.789 1.867-4.175v-1.8A5.338 5.338 0 0 1 12 5.365ZM8.733 18c.094.852.306 1.54.944 2.112a3.48 3.48 0 0 0 4.646 0c.638-.572 1.236-1.26 1.33-2.112h-6.92Z" />
+                    </svg>
+                    {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-4 h-4 px-1 flex items-center justify-center">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
                 </Link>
             </li>
             <li className={getNavItemClasses('/settings')}>

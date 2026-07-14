@@ -8,18 +8,31 @@ export default function useFetchData(url) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Callers pass null while prerequisites (e.g. the session) load
+    if (!url) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     const fetchData = async () => {
       try {
         const result = await fetcher(url);
-        setData(result);
+        if (!cancelled) setData(result);
       } catch (err) {
-        setError(err.message);
+        if (!cancelled) setError(err.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, [url]);
 
   return { data, loading, error };
