@@ -16,7 +16,7 @@
     "js-cookie": "^3.0.5",
     "laravel-echo": "^1.16.1",
     "lucide-react": "^0.441.0",
-    "next": "^15.0.1",
+    "next": "15.0.7",
     "pusher-js": "^8.4.0-rc2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
