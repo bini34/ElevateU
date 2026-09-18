@@ -8,8 +8,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOG_PATH = path.join(__dirname, '..', 'server', 'storage', 'logs', 'laravel.log');
-const BASE = 'http://localhost:8080/api';
+const LOG_PATH = process.env.ELEVATEU_TEST_LOG_PATH || path.join(__dirname, '..', 'server', 'storage', 'logs', 'laravel.log');
+import { api, BASE } from './e2e-support.mjs';
 
 let passed = 0;
 let failed = 0;
@@ -26,22 +26,6 @@ function check(name, condition, detail = '') {
   }
 }
 
-async function api(pathname, { method = 'GET', token, body, form } = {}) {
-  const headers = { Accept: 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  let payload;
-  if (form) payload = form;
-  else if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-    payload = JSON.stringify(body);
-  }
-  const res = await fetch(`${BASE}${pathname}`, { method, headers, body: payload });
-  let json = null;
-  try {
-    json = await res.json();
-  } catch { /* empty */ }
-  return { status: res.status, json };
-}
 
 const PNG_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';

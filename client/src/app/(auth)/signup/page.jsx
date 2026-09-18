@@ -1,4 +1,5 @@
 "use client"
+import Link from 'next/link';
 import Image from "next/image";
 import { useState, useContext } from 'react';
 import { useRouter } from 'next/navigation';
@@ -68,7 +69,7 @@ export default function Signup() {
         <p className='text-[#c7c7c7bb]'>Join our community to share your stories, connect with like-minded friends, and express your thoughts!</p>
       </div>
       <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
-      <div className="flex gap-2 xxs:flex-col">
+      <div className="flex flex-col sm:flex-row gap-2">
 
       <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
@@ -76,7 +77,7 @@ export default function Signup() {
               <image href="/icons/user.svg" height="100%" width="100%" />
             </svg>
           </div>
-          <input type="text" id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your First Name"/>
+          <input type="text" id="firstName" aria-label="First name" autoComplete="given-name" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your First Name"/>
         </div>
       <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
@@ -84,7 +85,7 @@ export default function Signup() {
               <image href="/icons/user.svg" height="100%" width="100%" />
             </svg>
           </div>
-          <input type="text" id="last" value={lastName} onChange={(e) => setLastName(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your last Name"/>
+          <input type="text" id="lastName" aria-label="Last name" autoComplete="family-name" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your last Name"/>
         </div>
       </div>
       <div className="relative">
@@ -93,7 +94,7 @@ export default function Signup() {
               <image href="/icons/user.svg" height="100%" width="100%" />
             </svg>
           </div>
-          <input type="text" id="lastName" value={username} onChange={(e) => setUsername(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your User Name"/>
+          <input type="text" id="username" aria-label="Username" autoComplete="username" required value={username} onChange={(e) => setUsername(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Enter your User Name"/>
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
@@ -102,7 +103,7 @@ export default function Signup() {
               <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
             </svg>
           </div>
-          <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Enter your Email"/>
+          <input type="email" id="email" aria-label="Email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Enter your Email"/>
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none border-3 border-black">
@@ -110,7 +111,7 @@ export default function Signup() {
               <path fill="#C7C7C7" d="M 8 1 C 5.796781 1 4 2.796781 4 5 L 4 6 L 3.5 6 C 2.6774686 6 2 6.6774686 2 7.5 L 2 12.5 C 2 13.322531 2.6774686 14 3.5 14 L 12.5 14 C 13.322531 14 14 13.322531 14 12.5 L 14 7.5 C 14 6.6774686 13.322531 6 12.5 6 L 12 6 L 12 5 C 12 2.796781 10.203219 1 8 1 z M 8 2 C 9.662781 2 11 3.337219 11 5 L 11 6 L 5 6 L 5 5 C 5 3.337219 6.337219 2 8 2 z M 3.5 7 L 12.5 7 C 12.781469 7 13 7.2185314 13 7.5 L 13 12.5 C 13 12.781469 12.781469 13 12.5 13 L 3.5 13 C 3.2185314 13 3 12.781469 3 12.5 L 3 7.5 C 3 7.2185314 3.2185314 7 3.5 7 z M 5 9 A 1 1 0 0 0 4 10 A 1 1 0 0 0 5 11 A 1 1 0 0 0 6 10 A 1 1 0 0 0 5 9 z M 8 9 A 1 1 0 0 0 7 10 A 1 1 0 0 0 8 11 A 1 1 0 0 0 9 10 A 1 1 0 0 0 8 9 z M 11 9 A 1 1 0 0 0 10 10 A 1 1 0 0 0 11 11 A 1 1 0 0 0 12 10 A 1 1 0 0 0 11 9 z"></path>
             </svg>
           </div>
-          <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Enter your Password"/>
+          <input type="password" id="password" aria-label="Password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Enter your Password"/>
         </div>
         <div className="relative">
           <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none border-3 border-black">
@@ -118,16 +119,10 @@ export default function Signup() {
               <path fill="#C7C7C7" d="M 8 1 C 5.796781 1 4 2.796781 4 5 L 4 6 L 3.5 6 C 2.6774686 6 2 6.6774686 2 7.5 L 2 12.5 C 2 13.322531 2.6774686 14 3.5 14 L 12.5 14 C 13.322531 14 14 13.322531 14 12.5 L 14 7.5 C 14 6.6774686 13.322531 6 12.5 6 L 12 6 L 12 5 C 12 2.796781 10.203219 1 8 1 z M 8 2 C 9.662781 2 11 3.337219 11 5 L 11 6 L 5 6 L 5 5 C 5 3.337219 6.337219 2 8 2 z M 3.5 7 L 12.5 7 C 12.781469 7 13 7.2185314 13 7.5 L 13 12.5 C 13 12.781469 12.781469 13 12.5 13 L 3.5 13 C 3.2185314 13 3 12.781469 3 12.5 L 3 7.5 C 3 7.2185314 3.2185314 7 3.5 7 z M 5 9 A 1 1 0 0 0 4 10 A 1 1 0 0 0 5 11 A 1 1 0 0 0 6 10 A 1 1 0 0 0 5 9 z M 8 9 A 1 1 0 0 0 7 10 A 1 1 0 0 0 8 11 A 1 1 0 0 0 9 10 A 1 1 0 0 0 8 9 z M 11 9 A 1 1 0 0 0 10 10 A 1 1 0 0 0 11 11 A 1 1 0 0 0 12 10 A 1 1 0 0 0 11 9 z"></path>
             </svg>
           </div>
-          <input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Confirm your Password"/>
+          <input type="password" id="confirmPassword" aria-label="Confirm password" autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-white dark:border-white dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Confirm your Password"/>
         </div>
         <div className="flex justify-between">
-          <div className="flex">
-            <div className="flex items-center h-5">
-              <input id="remember" type="checkbox" value="" className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800" required />
-            </div>
-            <label className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Remember me</label>
-          </div>
-          <a className='text-base text-red-400 hover:underline' href="/forget-password"> Forgot your password?</a>
+          <Link className='text-base text-red-400 hover:underline' href="/forget-password"> Forgot your password?</Link>
         </div>
 
         {formError && (
@@ -162,7 +157,7 @@ export default function Signup() {
         </button>
       </div> */}
       <div>
-        <p className="text-[#c7c7c7] text-center">Already have an account? <a href="/signin" className="text-red-500">Sign in</a></p>
+        <p className="text-[#c7c7c7] text-center">Already have an account? <Link href="/signin" className="text-red-500">Sign in</Link></p>
       </div>
     </div>
   );

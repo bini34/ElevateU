@@ -73,8 +73,12 @@ class ProfileController extends Controller
             'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
+        if (!$request->user()->profile) {
+            return $this->errorResponse('Profile not found', 404);
+        }
+
         $file = $request->file('avatar');
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = Str::uuid() . '.' . $file->extension();
         $path = Storage::disk('public')->putFileAs('uploads/avatars', $file, $filename);
 
         if ($path === false) {
@@ -85,9 +89,20 @@ class ProfileController extends Controller
 
         $previous = $request->user()->profile?->profile_picture_URL;
 
-        $this->profileRepository->updateProfile($request->user()->id, [
-            'profile_picture_URL' => $url,
-        ]);
+        try {
+            $profile = $this->profileRepository->updateProfile($request->user()->id, [
+                'profile_picture_URL' => $url,
+            ]);
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($path);
+            throw $e;
+        }
+
+        if (!$profile) {
+            Storage::disk('public')->delete($path);
+
+            return $this->errorResponse('Profile not found', 404);
+        }
 
         // Best-effort cleanup of the previous avatar file
         if ($previous && str_contains($previous, '/storage/uploads/avatars/')) {

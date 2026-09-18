@@ -11,8 +11,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(__dirname, '..', 'client', 'package.json'));
 const Pusher = require('pusher-js');
 
-const BASE = 'http://localhost:8080/api';
-const REVERB_KEY = process.env.REVERB_APP_KEY || 'ls7yo6wrxrmbtvuv86qo';
+import { api, BASE, WS_HOST, WS_PORT, WS_TLS, reverbKey } from './e2e-support.mjs';
+const REVERB_KEY = reverbKey();
 const BROADCAST_EVENT = 'Illuminate\\Notifications\\Events\\BroadcastNotificationCreated';
 
 let passed = 0;
@@ -30,28 +30,14 @@ function check(name, condition, detail = '') {
   }
 }
 
-async function api(pathname, { method = 'GET', token, body } = {}) {
-  const headers = { Accept: 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  let payload;
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-    payload = JSON.stringify(body);
-  }
-  const res = await fetch(`${BASE}${pathname}`, { method, headers, body: payload });
-  let json = null;
-  try {
-    json = await res.json();
-  } catch { /* empty */ }
-  return { status: res.status, json };
-}
 
 function makeSocket(token) {
   return new Pusher(REVERB_KEY, {
-    wsHost: 'localhost',
-    wsPort: 6001,
-    forceTLS: false,
-    enabledTransports: ['ws'],
+    wsHost: WS_HOST,
+    wsPort: WS_PORT,
+    wssPort: WS_PORT,
+    forceTLS: WS_TLS,
+    enabledTransports: WS_TLS ? ['wss'] : ['ws'],
     cluster: 'mt1',
     disableStats: true,
     authorizer: (channel) => ({

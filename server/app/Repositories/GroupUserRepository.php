@@ -16,7 +16,7 @@ class GroupUserRepository
     // Add a user to a group
     public function addUserToGroup($groupId, $userId)
     {
-        return $this->groupUser->create([
+        return $this->groupUser->firstOrCreate([
             'group_id' => $groupId,
             'user_id' => $userId
         ]);

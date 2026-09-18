@@ -10,6 +10,10 @@ class Profile extends Model
 {
     use HasFactory, GeneratesUuid;
 
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
     /**
      * The attributes that are mass assignable.
      *

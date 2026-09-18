@@ -30,10 +30,18 @@ return [
 
     'disks' => [
 
+        // Never expose this disk via storage:link or Laravel's signed serve route.
+        'message_attachments' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/messages'),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false,
             'throw' => false,
         ],
 

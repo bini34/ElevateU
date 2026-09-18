@@ -10,12 +10,11 @@ import { timeAgo } from '@/lib/format';
 
 export default function NotificationsPage() {
     const router = useRouter();
-    const { notifications, unreadCount, loading, hasMore, loadNotifications, markRead, markAllRead } = useNotifications();
+    const { notifications, unreadCount, loading, error, hasMore, loadNotifications, markRead, markAllRead } = useNotifications();
 
     useEffect(() => {
         loadNotifications(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
-    }, []);
+    }, [loadNotifications]);
 
     const handleItemClick = (notification) => {
         if (!notification.read_at) markRead(notification.id);
@@ -35,6 +34,12 @@ export default function NotificationsPage() {
                 </div>
 
                 <div className="w-full max-w-xl mx-auto pb-24">
+                    {error && (
+                        <div className="p-4 text-center" role="alert">
+                            <p className="text-sm text-red-600">{error}</p>
+                            <button className="text-sm text-blue-600 underline" onClick={() => loadNotifications(true)}>Try again</button>
+                        </div>
+                    )}
                     {loading && notifications.length === 0 && (
                         <div className="flex flex-col gap-3 p-4 animate-pulse">
                             {[...Array(5)].map((_, i) => (
@@ -49,7 +54,7 @@ export default function NotificationsPage() {
                         </div>
                     )}
 
-                    {!loading && notifications.length === 0 && (
+                    {!loading && !error && notifications.length === 0 && (
                         <div className="flex flex-col items-center gap-2 py-24 text-center">
                             <p className="text-lg font-semibold">No notifications yet</p>
                             <p className="text-gray-500 text-sm">Likes, comments, and messages will show up here.</p>

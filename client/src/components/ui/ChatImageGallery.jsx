@@ -11,8 +11,7 @@ const ChatImageGallery = ({ content }) => {
             alt={img.alt} 
             width={500} // Set a width based on your layout needs
             height={500} // Set a height based on your layout needs
-            className="rounded-lg" 
-            layout="responsive"
+            className="rounded-lg w-full h-auto"
           />
         </div>
       ))}

@@ -67,7 +67,7 @@ class PostService
                         'post_id' => $post->id,
                         'name' => $file->getClientOriginalName(),
                         'path' => $path,
-                        'mime' => $file->getClientMimeType(),
+                        'mime' => $file->getMimeType(),
                         'size' => $file->getSize(),
                     ]);
                 }
@@ -126,7 +126,7 @@ class PostService
      */
     protected function storeFile($file): string
     {
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = Str::uuid() . '.' . $file->extension();
         $path = Storage::disk('public')->putFileAs('uploads/posts', $file, $filename);
 
         if ($path === false) {

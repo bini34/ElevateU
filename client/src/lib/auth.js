@@ -1,5 +1,5 @@
-import Fetch from './fetcher';
-import { setToken, getToken, removeToken } from './token';
+import { fetcher } from '../utils/fetcher.js';
+import { setToken, getToken, removeToken } from './token.js';
 
 export { setToken, getToken, removeToken };
 
@@ -7,14 +7,14 @@ export { setToken, getToken, removeToken };
 // Each helper returns that body; the token is persisted on success.
 
 export const signUp = async (user_name, first_name, last_name, email, password, password_confirmation) => {
-  const data = await Fetch('/auth/register', 'POST', {
+  const data = await fetcher('/auth/register', { method: 'POST', body: {
     user_name,
     first_name,
     last_name,
     email,
     password,
     password_confirmation,
-  });
+  } });
   if (data?.status === 'success' && data.data?.token) {
     setToken(data.data.token);
   }
@@ -25,7 +25,7 @@ export const signIn = async (email, password) => {
   if (!email || !password) {
     throw new Error('Email and password are required');
   }
-  const data = await Fetch('/auth/login', 'POST', { email, password });
+  const data = await fetcher('/auth/login', { method: 'POST', body: { email, password } });
   if (data?.status === 'success' && data.data?.token) {
     setToken(data.data.token);
   }
@@ -33,18 +33,13 @@ export const signIn = async (email, password) => {
 };
 
 export const signOut = async () => {
+  const token = getToken();
   try {
-    if (getToken()) {
-      await Fetch('/auth/logout', 'POST');
+    if (token) {
+      await fetcher('/auth/logout', { method: 'POST', token });
     }
   } finally {
-    removeToken();
+    // A delayed logout must not clear a newly signed-in session.
+    if (getToken() === token) removeToken();
   }
-};
-
-export const forgetPassword = async (email) => {
-  if (!email) {
-    throw new Error('Email is required');
-  }
-  return await Fetch('/forget-password', 'POST', { email });
 };

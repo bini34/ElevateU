@@ -10,7 +10,7 @@ import { timeAgo } from '@/lib/format';
 
 export default function NotificationBell() {
     const router = useRouter();
-    const { unreadCount, notifications, loading, loadNotifications, markRead, markAllRead } = useNotifications();
+    const { unreadCount, notifications, loading, error, loadNotifications, markRead, markAllRead } = useNotifications();
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -61,10 +61,16 @@ export default function NotificationBell() {
                     </div>
 
                     <div className="max-h-96 overflow-y-auto">
+                    {error && (
+                        <div className="p-4 text-center" role="alert">
+                            <p className="text-sm text-red-600">{error}</p>
+                            <button className="text-sm text-blue-600 underline" onClick={() => loadNotifications(true)}>Try again</button>
+                        </div>
+                    )}
                         {loading && notifications.length === 0 && (
                             <p className="p-4 text-sm text-gray-400 text-center">Loading…</p>
                         )}
-                        {!loading && notifications.length === 0 && (
+                        {!loading && !error && notifications.length === 0 && (
                             <p className="p-6 text-sm text-gray-400 text-center">Nothing here yet.</p>
                         )}
                         {notifications.slice(0, 10).map((notification) => (

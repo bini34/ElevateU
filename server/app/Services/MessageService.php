@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Conversation;
+use App\Models\Group;
 use App\Models\GroupUser;
 use App\Models\User;
 use App\Repositories\ConversationRepository;
@@ -43,6 +44,8 @@ class MessageService
         if (!empty($data['client_uuid'])) {
             $existing = $this->messageRepository->findBySenderAndClientUuid($senderId, $data['client_uuid']);
             if ($existing) {
+                // Removed members must not recover group content by replaying a key.
+                $this->getMessageById($existing->id, $senderId);
                 return ['message' => $existing, 'created' => false];
             }
         }
@@ -82,20 +85,22 @@ class MessageService
                         'message_id' => $message->id,
                         'name' => $file->getClientOriginalName(),
                         'path' => $path,
-                        'mime' => $file->getClientMimeType(),
+                        'mime' => $file->getMimeType(),
                         'size' => $file->getSize(),
                     ]);
                 }
 
                 if (isset($conversation)) {
                     $conversation->update(['last_message_id' => $message->id]);
+                } elseif ($message->group_id) {
+                    Group::whereKey($message->group_id)->update(['last_message_id' => $message->id]);
                 }
 
                 return $message;
             });
         } catch (\Throwable $e) {
             foreach ($storedPaths as $path) {
-                Storage::disk('public')->delete($path);
+                Storage::disk('message_attachments')->delete($path);
             }
             throw $e;
         }
@@ -110,14 +115,19 @@ class MessageService
     {
         $message = $this->messageRepository->find($id);
 
-        $isParticipant = $message->sender_id === $userId
-            || $message->receiver_id === $userId
-            || ($message->conversation_id && $this->isConversationParticipant($message->conversation_id, $userId))
-            || ($message->group_id && GroupUser::where('group_id', $message->group_id)->where('user_id', $userId)->exists());
+        if ($message->group_id) {
+            $this->assertGroupMember($message->group_id, $userId);
 
-        if (!$isParticipant) {
+            return $message;
+        }
+
+        // Deleting a group nulls group_id in the existing schema. An orphaned
+        // group message must not become a direct message readable by its sender.
+        if (!$message->conversation_id) {
             throw new AuthorizationException('You are not part of this conversation.');
         }
+
+        $this->assertConversationParticipant($message->conversation_id, $userId);
 
         return $message;
     }
@@ -204,8 +214,8 @@ class MessageService
 
     protected function storeFile($file): string
     {
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        $path = Storage::disk('public')->putFileAs('uploads/messages', $file, $filename);
+        $filename = Str::uuid() . '.' . $file->extension();
+        $path = Storage::disk('message_attachments')->putFileAs('uploads/messages', $file, $filename);
 
         if ($path === false) {
             throw new \RuntimeException('Failed to store uploaded file.');

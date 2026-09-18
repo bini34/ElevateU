@@ -21,7 +21,7 @@ class PostController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 10), 50);
+        $perPage = $this->perPage($request, 10);
         $posts = $this->postService->getAllPostsWithDetails($perPage, $request->user()->id);
         return $this->successResponse($posts);
     }
@@ -62,7 +62,7 @@ class PostController extends Controller
 
     public function userPosts(Request $request, $userId): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 10), 50);
+        $perPage = $this->perPage($request, 10);
         $posts = $this->postService->getUserPosts($userId, $perPage, $request->user()->id);
         return $this->successResponse($posts);
     }
@@ -73,7 +73,7 @@ class PostController extends Controller
             'query' => 'required|string|max:255',
         ]);
 
-        $perPage = min((int) $request->input('per_page', 10), 50);
+        $perPage = $this->perPage($request, 10);
         $posts = $this->postService->searchPosts($validated['query'], $perPage, $request->user()->id);
 
         return $this->successResponse($posts);

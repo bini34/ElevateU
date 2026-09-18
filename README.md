@@ -1,158 +1,46 @@
-# ElevateU
+﻿# ElevateU
 
-A social media platform: feed with posts, likes and comments, real-time
-direct & group chat, live notifications, and user profiles.
+ElevateU is being developed into a social accountability and personal-development platform. Its intended core is goals, measurable milestones, daily check-ins, consistency, and progress analytics. The current implementation provides supporting social infrastructure: posts, comments, likes, profiles, notifications, and direct/group messaging.
 
-| Layer     | Stack |
-|-----------|-------|
-| Client    | Next.js 15 (App Router), React 18, Tailwind CSS |
-| API       | Laravel 11, Laravel Passport (bearer tokens) |
-| Realtime  | Laravel Reverb (Pusher protocol over WebSockets) + Laravel Echo |
-| Database  | MySQL 8 |
-| Dev infra | Docker Compose (php-fpm + nginx + MySQL + Reverb + queue worker) |
+**Status:** under stabilization; not production-ready. Goal tracking and analytics are planned, not implemented. See the [audit and verification report](docs/AUDIT.md) for evidence and limitations, and the [30-iteration development plan](DEVELOPMENT_PLAN.md) for the implementation order.
 
-## Features
+| Layer | Existing stack |
+| --- | --- |
+| Frontend | Next.js 15 App Router, React 18, mostly JavaScript/JSX, Tailwind CSS 3 |
+| API | Laravel 11 / PHP 8.2+, Eloquent, Laravel Passport bearer tokens |
+| Database | MySQL 8, UUID application entities, versioned migrations |
+| Realtime | Laravel Reverb, Laravel Echo, Pusher protocol |
+| Local deployment | Docker Compose, nginx, PHP-FPM, Supervisor, database queue worker |
 
-- **Auth** — register, login, logout, change password (revokes other
-  sessions), email-based password reset, protected routes, expired-session
-  handling. Personal access tokens expire after 30 days.
-- **Feed** — infinite scroll, newest-first, optimistic likes with per-user
-  state, comments (create / edit / delete by author or post owner),
-  create posts with up to 10 images/videos, edit & delete own posts.
-- **Chat** — real-time direct messages with delivery over WebSockets,
-  automatic reconnection with gap-fill, typing indicators (whispers),
-  online presence, read receipts, idempotent sends (`client_uuid` — a
-  retry can never duplicate a message), paginated history, group chat.
-- **Notifications** — real-time on likes, comments and direct messages;
-  unread badges, mark-read/mark-all, toast on arrival.
-- **Profiles** — public profile pages (`/{username}`) with the user's
-  posts, avatar upload, bio/location/birthday editing.
+Exact lockfile versions and maintenance concerns are in [Architecture](docs/ARCHITECTURE.md). This audit retains the stack and avoids a broad rewrite.
 
-## Getting started (development)
+## Documentation
 
-Prerequisites: Docker Desktop and Node.js ≥ 20. PHP is **not** required on
-the host — every artisan command runs inside the container.
+- [Architecture and engineering conventions](docs/ARCHITECTURE.md)
+- [Local development, environment, and deployment](docs/DEVELOPMENT.md)
+- [API and realtime contracts](docs/API.md)
+- [Audit findings, changes, and verification results](docs/AUDIT.md)
+- [Day 2 security decisions and verification](docs/SECURITY.md)
+- [Dependency advisories and controlled upgrades](docs/DEPENDENCIES.md)
+- [30-iteration development plan](DEVELOPMENT_PLAN.md)
 
-### 1. API stack
+## Local startup
 
-```bash
-cd server
-cp .env.example .env          # then fill in values (see Environment below)
-docker compose up -d --build
-docker compose exec laravel-app composer install
-docker compose exec laravel-app php artisan key:generate
-docker compose exec laravel-app php artisan migrate
-docker compose exec laravel-app php artisan passport:keys
-docker compose exec laravel-app php artisan passport:client --personal
-# copy the printed Client ID/secret into .env as
-# PASSPORT_PERSONAL_ACCESS_CLIENT_ID / PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET
-docker compose exec laravel-app php artisan storage:link
-```
+Prerequisites: Node.js 20+ and Docker Desktop with Linux containers. PHP and Composer can run inside Docker. Use lockfiles (`npm ci`, `composer install`) for reproduction.
 
-The API is served by nginx at **http://localhost:8080** (routes under
-`/api`), websockets at **ws://localhost:6001**, MySQL on host port 3307.
-The app container runs php-fpm, Reverb and a queue worker under
-supervisord (`docker compose exec laravel-app supervisorctl status`).
+1. Copy `server/.env.example` to `server/.env` only if a local file does not already exist. Configure local database and Reverb settings.
+2. Follow the [first-time API provisioning steps](docs/DEVELOPMENT.md#api-stack). Existing data must not be reset.
+3. Copy `client/.env.example` to `client/.env.local` only if absent, then run `npm ci` and `npm run dev` from `client/`.
+4. Open `http://localhost:3000`. Default development API: `http://localhost:8080/api`; WebSocket port: `6001`.
 
-### 2. Client
+The previous `server/.env` was tracked. The audit removes it from Git tracking while retaining the local file. Rotate credentials that appeared in it; removing the current file does not erase Git history. Fresh clones must configure their own environment.
 
-```bash
-cd client
-cp .env.example .env.local    # defaults match the docker stack
-npm install
-npm run dev                   # http://localhost:3000
-```
+## Checks
 
-## Environment
+From `client/`: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
-Server (`server/.env`) — beyond the Laravel defaults:
-
-| Variable | Purpose |
-|----------|---------|
-| `APP_URL` | Public origin of the API (`http://localhost:8080`); storage URLs derive from it |
-| `FRONTEND_URL` | Where password-reset links send users (`http://localhost:3000`) |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated origin allowlist; `*` for dev |
-| `PASSPORT_PERSONAL_ACCESS_CLIENT_ID` / `_SECRET` | From `passport:client --personal` |
-| `REVERB_APP_ID` / `_KEY` / `_SECRET` | Reverb app credentials |
-| `REVERB_HOST` / `REVERB_PORT` / `REVERB_SCHEME` | Public websocket endpoint (`localhost` / `6001` / `http` in dev) |
-
-Client (`client/.env.local`):
-
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_BACKEND_URL` | API base **including** `/api` (`http://localhost:8080/api`) |
-| `NEXT_PUBLIC_REVERB_APP_KEY` | Must match the server's `REVERB_APP_KEY` |
-| `NEXT_PUBLIC_REVERB_HOST` / `_PORT` / `_SCHEME` | Websocket endpoint (`localhost` / `6001` / `http`) |
-
-## Testing
-
-End-to-end suites exercise the running docker stack over real HTTP and
-WebSockets (126 assertions total):
-
-```bash
-node scripts/feed-e2e.mjs           # posts, likes, comments, uploads, ownership (51)
-node scripts/chat-e2e.mjs           # messaging incl. live websocket delivery (32)
-node scripts/profile-e2e.mjs        # profiles, avatar, password flows (23)
-node scripts/notifications-e2e.mjs  # live notifications, unread counts (20)
-```
-
-Each run registers throwaway users with `...@example.com` emails; remove
-them with
-`DELETE FROM users WHERE email LIKE '%@example.com'` when they clutter
-the chat list.
-
-Client production build (must pass with zero errors):
-
-```bash
-cd client && npm run build
-```
-
-## Architecture
-
-```
-client/src
-  app/            Next.js routes (feed, chat, groups, profile, settings, auth)
-  components/     UI components (PostCard, chat bubbles, notification bell, ...)
-  context/        AuthContext, NotificationContext, DataContext
-  hooks/          echo (websocket singleton), usePosts, useOnlineUsers, ...
-  lib/            API layers per feature (post, message, profile, notifications)
-  utils/fetcher   axios wrapper: bearer token, X-Socket-Id, 401 handling
-
-server/app
-  Http/Controllers   thin controllers (validation + auth identity)
-  Services           domain logic & authorization (ownership, membership)
-  Repositories       query layer (eager loading, pagination)
-  Events             MessageSent / MessagesRead (broadcast now)
-  Notifications      ActivityNotification (database + broadcast)
-```
-
-Realtime channels: `conversations.{id}` (private, participants),
-`groups.{id}` (private, members), `online` (presence),
-`App.Models.User.{id}` (private, notifications). Channel auth lives in
-`server/routes/channels.php`; typing indicators are client whispers and
-never touch the server.
-
-The full endpoint list is in [docs/API.md](docs/API.md).
-
-## Deploying to production
-
-1. **Secrets**: generate fresh `APP_KEY`, Reverb credentials and OAuth
-   secrets; never commit `.env` (images exclude it via `.dockerignore`).
-2. **Server env**: `APP_ENV=production`, `APP_DEBUG=false`, real `APP_URL`
-   and `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS=https://your-client-origin`,
-   `REVERB_SCHEME=https`.
-3. **Server image**: `docker build -t elevateu-api server/` — runs
-   php-fpm + Reverb (:6001) + queue worker under supervisord; put nginx
-   (see `server/nginx/default.conf`) in front for `/api` and `/storage`,
-   and terminate TLS + proxy websockets to :6001.
-4. **One-time provisioning** inside the container: `php artisan migrate`,
-   `passport:keys`, `passport:client --personal`, `storage:link`.
-5. **Client image**: build with your public values baked in —
-   see the build-args header in `client/Dockerfile`. Runs `node server.js`
-   (standalone) on :3000 as a non-root user.
-6. Persist `storage/app/public` (uploads) and the MySQL data volume; use a
-   non-root MySQL user with a strong password.
+Backend checks and the four HTTP/WebSocket integration suites are documented in [Development](docs/DEVELOPMENT.md#verification). Integration scripts create accounts and content; use the isolated test stack. They are API integration tests, not browser tests. Never clean up by deleting every user with an `@example.com` address.
 
 ## License
 
-MIT — see [LICENSE.txt](LICENSE.txt).
+MIT. See [LICENSE.txt](LICENSE.txt).

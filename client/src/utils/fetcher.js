@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken, removeToken } from '@/lib/token';
+import { getToken, removeToken } from '../lib/token.js';
 
 // Endpoints where a 401 is an expected answer, not an expired session
 const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
@@ -24,7 +24,7 @@ export const fetcher = async (url, options = {}) => {
   if (!baseUrl) {
     throw new Error('NEXT_PUBLIC_BACKEND_URL is not configured');
   }
-  const fullUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+  const fullUrl = `${baseUrl.replace(/\/+$/, '')}${url.startsWith('/') ? url : `/${url}`}`;
 
   const token = options.token || getToken();
   // Lets the server exclude this client's own websocket from broadcasts
@@ -42,12 +42,13 @@ export const fetcher = async (url, options = {}) => {
         ...options.headers,
       },
       data: options.body || null,
-      responseType: 'json',
+      responseType: options.responseType || 'json',
+      signal: options.signal,
     });
 
     return response.data;
   } catch (error) {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && (!token || token === getToken())) {
       handleUnauthorized(url);
     }
 

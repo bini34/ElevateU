@@ -1,7 +1,7 @@
 // End-to-end tests for the ElevateU feed API.
 // Exercises: register/login, post create (text + image), feed pagination &
 // ordering, like toggle, comments CRUD, ownership rules, edit, delete.
-const BASE = 'http://localhost:8080/api';
+import { api, BASE } from './e2e-support.mjs';
 
 let passed = 0;
 let failed = 0;
@@ -18,25 +18,6 @@ function check(name, condition, detail = '') {
   }
 }
 
-async function api(path, { method = 'GET', token, body, form } = {}) {
-  const headers = { Accept: 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  let payload;
-  if (form) {
-    payload = form;
-  } else if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-    payload = JSON.stringify(body);
-  }
-  const res = await fetch(`${BASE}${path}`, { method, headers, body: payload });
-  let json = null;
-  try {
-    json = await res.json();
-  } catch {
-    /* non-JSON response */
-  }
-  return { status: res.status, json };
-}
 
 // 1x1 red PNG
 const PNG_BASE64 =

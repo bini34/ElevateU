@@ -11,10 +11,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(__dirname, '..', 'client', 'package.json'));
 const Pusher = require('pusher-js');
 
-const BASE = 'http://localhost:8080/api';
-const REVERB_KEY = process.env.REVERB_APP_KEY || 'ls7yo6wrxrmbtvuv86qo';
-const WS_HOST = 'localhost';
-const WS_PORT = 6001;
+import { api, BASE, WS_HOST, WS_PORT, WS_TLS, reverbKey } from './e2e-support.mjs';
+const REVERB_KEY = reverbKey();
 
 let passed = 0;
 let failed = 0;
@@ -31,30 +29,14 @@ function check(name, condition, detail = '') {
   }
 }
 
-async function api(pathname, { method = 'GET', token, body, form, socketId } = {}) {
-  const headers = { Accept: 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  if (socketId) headers['X-Socket-Id'] = socketId;
-  let payload;
-  if (form) payload = form;
-  else if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-    payload = JSON.stringify(body);
-  }
-  const res = await fetch(`${BASE}${pathname}`, { method, headers, body: payload });
-  let json = null;
-  try {
-    json = await res.json();
-  } catch { /* empty */ }
-  return { status: res.status, json };
-}
 
 function makeSocket(token, name) {
   const pusher = new Pusher(REVERB_KEY, {
     wsHost: WS_HOST,
     wsPort: WS_PORT,
-    forceTLS: false,
-    enabledTransports: ['ws'],
+    wssPort: WS_PORT,
+    forceTLS: WS_TLS,
+    enabledTransports: WS_TLS ? ['wss'] : ['ws'],
     cluster: 'mt1', // required by pusher-js, unused with a custom wsHost
     disableStats: true,
     authorizer: (channel) => ({
@@ -268,6 +250,48 @@ async function main() {
 
   socketA.disconnect();
   socketC.disconnect();
+
+  console.log('== REST: private message attachments ==');
+  // Run after unread-count and socket assertions so this extra message cannot
+  // change their expected history, read receipts, or delivery events.
+  const imageBytes = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=',
+    'base64',
+  );
+  const uploadForm = new FormData();
+  uploadForm.append('receiver_id', idB);
+  uploadForm.append('files[]', new Blob([imageBytes], { type: 'image/png' }), 'misleading.txt');
+  const upload = await api('/messages', { method: 'POST', token: tokenA, form: uploadForm });
+  check('private attachment upload accepted (201)', upload.status === 201, `got ${upload.status}`);
+  const attachment = upload.json?.data?.message?.file_attachments?.[0];
+  check('attachment MIME and extension come from PNG content',
+    attachment?.mime === 'image/png' && attachment?.path?.endsWith('.png'));
+  if (!attachment?.id || !attachment?.path) {
+    throw new Error('Private upload did not return an attachment identifier and path.');
+  }
+  const attachmentUrl = `${BASE}/message-attachments/${attachment.id}`;
+  const timeoutMs = Number(process.env.ELEVATEU_TEST_TIMEOUT_MS || 60000);
+  for (const [name, token] of [['sender', tokenA], ['recipient', tokenB]]) {
+    const response = await fetch(attachmentUrl, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/octet-stream' },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const downloaded = Buffer.from(await response.arrayBuffer());
+    check(`${name} downloads identical private attachment bytes`, response.status === 200 && downloaded.equals(imageBytes), `HTTP ${response.status}`);
+    check(`${name} download has safe MIME and privacy headers`,
+      response.headers.get('content-type') === 'application/octet-stream'
+      && response.headers.get('x-content-type-options') === 'nosniff'
+      && /(?:^|,)\s*no-store\s*(?:,|$)/i.test(response.headers.get('cache-control') || ''));
+  }
+  const guestAttachment = await api(`/message-attachments/${attachment.id}`);
+  check('guest cannot download attachment (401)', guestAttachment.status === 401, `got ${guestAttachment.status}`);
+  const outsiderAttachment = await api(`/message-attachments/${attachment.id}`, { token: tokenC });
+  check('outsider cannot download attachment (403)', outsiderAttachment.status === 403, `got ${outsiderAttachment.status}`);
+  const publicAttachment = await fetch(new URL(`/storage/${attachment.path}`, BASE), {
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  check('attachment has no public storage URL (404)', publicAttachment.status === 404, `got ${publicAttachment.status}`);
+  await publicAttachment.arrayBuffer();
 
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failures.length) {

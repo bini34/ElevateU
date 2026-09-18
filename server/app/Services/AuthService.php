@@ -26,30 +26,34 @@ class AuthService
         $profileData['first_name'] = $data['first_name'];
         $profileData['last_name'] = $data['last_name'];
 
-        // Create the user and profile together so a failure leaves no orphan user
+        // User, profile and token must either all succeed or all roll back.
         return DB::transaction(function () use ($userData, $profileData) {
             $user = $this->authRepository->create($userData);
 
             $profileData['user_id'] = $user->id;
             $this->profileRepository->createProfile($profileData);
 
-            return $user->load('profile');
+            return ['user' => $user->load('profile'), 'token' => $user->createToken('auth_token')->accessToken];
         });
     }
 
     /**
      * Attempt to authenticate the user.
      *
-     * @return \App\Models\User|null The user on success, null on invalid credentials.
+     * @return array|null The session on success, null on invalid credentials.
      */
     public function login(array $data)
     {
-        $user = $this->authRepository->findByEmail($data['email']);
+        return DB::transaction(function () use ($data) {
+            // Lock through token issuance so a password change/reset cannot
+            // revoke tokens and then race an old-password login into a new one.
+            $user = $this->authRepository->findByEmail($data['email']);
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
-            return null;
-        }
+            if (!$user || !Hash::check($data['password'], $user->password)) {
+                return null;
+            }
 
-        return $user->load('profile');
+            return ['user' => $user->load('profile'), 'token' => $user->createToken('auth_token')->accessToken];
+        });
     }
 }

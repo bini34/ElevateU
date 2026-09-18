@@ -23,7 +23,7 @@ class CommentController extends Controller
      */
     public function index(Request $request, $id): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 10), 50);
+        $perPage = $this->perPage($request, 10);
         $comments = $this->commentService->getForPost($id, $perPage);
 
         return $this->successResponse($comments);

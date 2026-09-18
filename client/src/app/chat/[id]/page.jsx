@@ -39,7 +39,7 @@ function ChatPage() {
 	const { id: peerId } = useParams();
 	const { authUser } = useContext(AuthContext);
 	const { echo, connectionState } = useEcho();
-	const { onlineIds } = useOnlineUsers();
+	const { onlineIds, error: presenceError } = useOnlineUsers();
 
 	const [peer, setPeer] = useState(null);
 	const [conversationId, setConversationId] = useState(null);
@@ -265,6 +265,7 @@ function ChatPage() {
 
 	return (
 		<div className="flex flex-col h-screen">
+			{presenceError && <p role="status" className="px-4 text-sm text-amber-700">{presenceError}</p>}
 			<ChatHeader
 				user={peer}
 				online={peer ? onlineIds.has(peer.user_id) : false}
@@ -330,7 +331,7 @@ function ChatPage() {
 				)}
 				<div ref={bottomRef} />
 			</div>
-			<ChatTextBox onSend={handleSend} onTyping={handleTyping} />
+			<ChatTextBox onSend={handleSend} onTyping={handleTyping} disabled={!authUser} />
 		</div>
 	);
 }

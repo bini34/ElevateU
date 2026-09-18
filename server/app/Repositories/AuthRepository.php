@@ -18,6 +18,6 @@ class AuthRepository
 
     public function findByEmail(string $email)
     {
-        return User::where('email', $email)->first();
+        return User::where('email', $email)->lockForUpdate()->first();
     }
 }

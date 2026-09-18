@@ -31,8 +31,8 @@ class MessageController extends Controller
             'message' => 'required_without:files|nullable|string|max:5000',
             'files' => 'required_without:message|nullable|array|max:10',
             'files.*' => 'file|mimes:jpeg,png,jpg,gif,webp,mp4,avi,mov,pdf,doc,docx|max:20480',
-            'receiver_id' => 'required_without:group_id|nullable|uuid|exists:users,id',
-            'group_id' => 'nullable|uuid|exists:groups,id',
+            'receiver_id' => 'required_without:group_id|prohibits:group_id|nullable|uuid|exists:users,id',
+            'group_id' => 'prohibits:receiver_id|nullable|uuid|exists:groups,id',
             'client_uuid' => 'nullable|uuid',
         ]);
 
@@ -101,7 +101,7 @@ class MessageController extends Controller
 
     public function getMessagesByConversation(Request $request, $conversationId): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 20), 50);
+        $perPage = $this->perPage($request, 20);
         $messages = $this->messageService->getMessagesByConversationPaginated(
             $conversationId,
             $request->user()->id,
@@ -128,7 +128,7 @@ class MessageController extends Controller
 
     public function getMessagesByGroup(Request $request, $groupId): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 20), 50);
+        $perPage = $this->perPage($request, 20);
         $messages = $this->messageService->getMessagesByGroupPaginated(
             $groupId,
             $request->user()->id,

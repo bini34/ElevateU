@@ -7,8 +7,7 @@ services:
     volumes:
       - .:/var/www/html
     ports:
-      - "9000:9000"
-      - "6001:6001" # Reverb websockets
+      - "127.0.0.1:6001:6001" # Reverb websockets; FPM stays on the internal network.
     networks:
       - laravel_network
     depends_on:
@@ -18,29 +17,28 @@ services:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: "no"
-      MYSQL_DATABASE: "ElevateU-DB"
+      # Existing volumes retain their original credentials. These defaults are
+      # for local development only; changing them does not rotate a database.
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD:-no}"
+      MYSQL_DATABASE: "${DB_DATABASE:-ElevateU-DB}"
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     networks:
       - laravel_network
   nginx:
     image: nginx:latest
     container_name: nginx
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - .:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - .:/var/www/html:ro
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       - laravel-app
     networks:
       - laravel_network
- 
-    # other configurations...
-
 networks:
   laravel_network: {}
 

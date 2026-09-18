@@ -3,6 +3,9 @@ const nextConfig = {
     // Self-contained server bundle for the production Docker image
     output: 'standalone',
     images: {
+      // Temporary security control while sharp's breaking upgrade is reviewed.
+      // Serve original media directly; disable the vulnerable optimizer route.
+      unoptimized: true,
       remotePatterns: [
         {
           // Local API (nginx) serving /storage uploads

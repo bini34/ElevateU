@@ -28,8 +28,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy project files (.dockerignore keeps .env, vendor and uploads out)
 COPY . /var/www/html
 
-# Install Laravel dependencies (dev deps excluded from the image; the dev
-# docker-compose bind mount re-runs composer install with dev deps anyway).
+# Install Laravel dependencies (dev deps excluded from the image). Compose
+# bind-mounts the source tree, so install host vendor dependencies before up.
 # Scripts are skipped during install because there is no .env at build
 # time; package discovery then runs with safe drivers.
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
@@ -49,4 +49,3 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # 9000 = php-fpm (nginx upstream), 6001 = Reverb websockets
 EXPOSE 9000 6001
 CMD ["/usr/local/bin/entrypoint.sh"]
-

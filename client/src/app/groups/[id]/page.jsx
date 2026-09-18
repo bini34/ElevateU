@@ -194,7 +194,7 @@ function GroupChatPage() {
 				)}
 				<div ref={bottomRef} />
 			</div>
-			<ChatTextBox onSend={handleSend} />
+			<ChatTextBox onSend={handleSend} disabled={!authUser} />
 		</div>
 	);
 }

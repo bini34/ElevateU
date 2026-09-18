@@ -15,8 +15,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "jsxFactory": "React.createElement",
-    "jsxFragmentFactory": "React.Fragment",
     "incremental": true,
     "plugins": [
       {
@@ -32,26 +30,13 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.js",
+    "src/**/*.jsx",
     ".next/types/**/*.ts",
-    "src/components/PostCard.jsx",
-    "src/components/ui/ImageSlider.jsx",
-    "tailwind.config.ts",
-    "src/app/chat/page.jsx",
-    "src/app/chat/page.jsx",
-    "src/components/Layout.jsx",
-    "src/utils/fetcher.js",
-    "src/hooks/useSignIn.js",
-    "src/hooks/useRegister.js",
-    "src/app/(auth)/signin/page.jsx",
-    "src/app/(auth)/signup/page.jsx",
-    "src/components/BottomNavigation.jsx",
-    "src/components/Header.jsx",
-    "src/components/MainContent.jsx",
-    "src/components/UserChatlist.jsx",
-    "src/app/page.jsx"
-, "src/lib/auth.js", "src/components/Nav.jsx"  ],
+    "tailwind.config.ts"
+  ],
   "exclude": [
     "node_modules"
   ]

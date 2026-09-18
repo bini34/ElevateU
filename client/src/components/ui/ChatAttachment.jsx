@@ -1,38 +1,60 @@
-// components/ChatAttachment.js
+"use client";
 
-import React from 'react';
-import ChatImageGallery from './ChatImageGallery';
+import { useContext, useEffect, useState } from 'react';
+import { AuthContext } from '@/context/AuthContext';
+import { isMessageImage, loadMessageAttachment } from '@/lib/attachments';
 
-const ChatAttachment = ({ content }) => {
-  const isImage = (content.mime || '').startsWith('image/');
-  const fileUrl = content.url || content.path;
+export default function ChatAttachment({ content }) {
+  const { authToken } = useContext(AuthContext);
+  const { id, mime } = content;
+  const image = isMessageImage(content.mime);
+  const [requested, setRequested] = useState(image);
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState(null);
+  const current = state?.session === authToken && state?.id === content.id ? state : null;
 
-  if (isImage) {
-    return <ChatImageGallery content={{ images: [{ url: fileUrl, alt: content.name }] }} />;
-  }
+  useEffect(() => {
+    if (!authToken || !requested) return undefined;
+    const controller = new AbortController();
+    let objectUrl;
+    const session = authToken;
+    setState({ session, id, loading: true });
+    loadMessageAttachment({ id, mime }, { signal: controller.signal })
+      .then((blob) => {
+        if (controller.signal.aborted) return;
+        objectUrl = URL.createObjectURL(blob);
+        setState({ session, id, url: objectUrl });
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setState({ session, id, error: error.status === 403 || error.status === 404
+            ? 'This attachment is unavailable or you no longer have access.'
+            : 'Could not load this attachment.' });
+        }
+      });
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [authToken, id, mime, requested, attempt]);
 
   return (
-    <div className="flex flex-col leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl dark:bg-gray-700">
-      <div className="flex items-start bg-gray-50 dark:bg-gray-600 rounded-xl p-2">
-        <div className="me-2">
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white pb-2">
-            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 20 21">...</svg>
-            {content.name}
-          </span>
-          <span className="flex text-xs font-normal text-gray-500 dark:text-gray-400 gap-2">
-            {(content.size / 1024 / 1024).toFixed(2)} MB • {content.mime.toUpperCase()}
-          </span>
-          <a
-            href={fileUrl}
-            download={content.name}
-            className="text-blue-700 dark:text-blue-500 underline hover:no-underline font-medium"
-          >
-            Download
-          </a>
+    <div className="p-3 bg-gray-100 rounded-xl my-2">
+      <p className="text-sm font-medium break-all">{content.name}</p>
+      {current?.loading && <p role="status" className="text-sm">Loading attachment...</p>}
+      {current?.error && (
+        <div role="alert">
+          <p className="text-sm">{current.error}</p>
+          <button type="button" className="underline" onClick={() => setAttempt((value) => value + 1)}>Retry</button>
         </div>
-      </div>
+      )}
+      {current?.url && image && (
+        // Authenticated bytes stay in a session-scoped blob, never Next's public image cache.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={current.url} alt={content.name || 'Message attachment'} className="rounded-lg max-w-full h-auto" />
+      )}
+      {current?.url && <a href={current.url} download={content.name} className="underline text-blue-700">Download</a>}
+      {!requested && <button type="button" className="underline text-blue-700" onClick={() => setRequested(true)}>Load attachment</button>}
     </div>
   );
-};
-
-export default ChatAttachment;
+}

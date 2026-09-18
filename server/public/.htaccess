@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # Match nginx's legacy private-media block on Apache deployments.
+    RewriteRule ^(?:storage/)?uploads/messages(?:/|$) - [R=404,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

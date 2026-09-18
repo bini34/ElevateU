@@ -1,14 +1,13 @@
 "use client";
+import Link from 'next/link';
 import Image from "next/image";
 import { useState, useContext } from "react";
-// import { useSignIn } from "@/hooks/useSignIn";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 import { signIn } from "@/lib/auth";
 
 export default function Signin() {
-  // const { signIn, loading, error } = useSignIn();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
@@ -82,6 +81,8 @@ export default function Signin() {
             type="email"
             id="email"
             aria-label="Email"
+            autoComplete="email"
+            required
             className="bg-white border-1 border-black text-gray-900 ring-1 ring-[#E0DEDE] text-sm rounded-3xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
             placeholder="Enter your Email"
             value={email}
@@ -104,6 +105,8 @@ export default function Signin() {
             type="password"
             id="password"
             aria-label="Password"
+            autoComplete="current-password"
+            required
             className="bg-white border border-black text-gray-900 text-sm rounded-3xl ring-1 ring-[#E0DEDE] focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
             placeholder="Enter your Password"
             value={password}
@@ -111,7 +114,7 @@ export default function Signin() {
           />
         </div>
         <div className="flex justify-end">
-          <a href="/forget-password" className="text-sm text-red-400 hover:underline">Forgot your password?</a>
+          <Link href="/forget-password" className="text-sm text-red-400 hover:underline">Forgot your password?</Link>
         </div>
         <button
           className="bg-red-500 text-lg text-white w-full py-2 rounded-3xl hover:bg-red-400"
@@ -142,7 +145,7 @@ export default function Signin() {
         </button>
       </div> */}
       <div>
-        <p className="text-[#c7c7c7] text-center">Don&apos;t have an account? <a href="/signup" className="text-red-500">Sign up</a></p>
+        <p className="text-[#c7c7c7] text-center">Don&apos;t have an account? <Link href="/signup" className="text-red-500">Sign up</Link></p>
       </div>
     </div>
   );

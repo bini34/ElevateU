@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MessageAttachmentController;
 
 Route::middleware('auth:api')->group(function () {
+    Route::get('/message-attachments/{id}', [MessageAttachmentController::class, 'show']);
     // Chat list cards for the authenticated user
     Route::get('/message-cards', [MessageController::class, 'getMessageCards']);
 

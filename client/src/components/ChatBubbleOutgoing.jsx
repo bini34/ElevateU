@@ -2,9 +2,6 @@
 
 import React from 'react';
 import ChatAttachment from './ui/ChatAttachment';
-// import ChatVoiceNote from './ui/ChatVoiceNote';
-// import ChatImageGallery from './ui/ChatImageGallery';
-// import ChatUrlPreview from './ui/ChatUrlPreview';
 import avatar from '../../public/images/avator.png';
 import Image from 'next/image';
 
@@ -18,7 +15,7 @@ const ChatBubbleOutgoing = ({ message }) => {
         </div>
         {renderMessageContent(message)}
       </div>
-      <Image className="w-8 h-8 rounded-full" src={message.avatar || avatar} alt={`${message.senderName}'s avatar`} />
+      <Image className="w-8 h-8 rounded-full" width={32} height={32} src={message.avatar || avatar} alt={`${message.senderName}'s avatar`} />
     </div>
   );
 };

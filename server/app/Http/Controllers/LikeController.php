@@ -33,7 +33,7 @@ class LikeController extends Controller
      */
     public function index(Request $request, $id): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 20), 50);
+        $perPage = $this->perPage($request, 20);
         $likes = $this->likeService->getLikers($id, $perPage);
 
         return $this->successResponse($likes);

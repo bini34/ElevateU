@@ -6,11 +6,13 @@ set -e
 
 cd /var/www/html
 
-mkdir -p storage/framework/cache/data storage/framework/sessions \n         storage/framework/views storage/framework/testing \n         storage/logs bootstrap/cache
-chmod -R ug+rwX storage bootstrap/cache || true
+mkdir -p storage/framework/cache/data storage/framework/sessions \
+         storage/framework/views storage/framework/testing \
+         storage/logs bootstrap/cache
+chmod -R ug+rwX storage bootstrap/cache
 
 if [ ! -e public/storage ]; then
-    php artisan storage:link || true
+    php artisan storage:link
 fi
 
 exec supervisord -n -c /etc/supervisor/supervisord.conf

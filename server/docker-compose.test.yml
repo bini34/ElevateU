@@ -1,0 +1,76 @@
+# Disposable integration stack. Never reuses the development MySQL volume.
+# Run with: docker compose -p elevateu-audit -f docker-compose.test.yml up -d
+# Remove its generated data with the same command prefix followed by down -v.
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: elevateu-audit-only
+      MYSQL_DATABASE: elevateu_audit
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+
+  laravel-app:
+    image: ${ELEVATEU_TEST_SERVER_IMAGE:-server-laravel-app:latest}
+    working_dir: /var/www/html
+    entrypoint: ["sh", "/var/www/html/docker/test-entrypoint.sh"]
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/test.env:/var/www/html/.env:ro
+      - ./supervisord.conf:/etc/supervisor/conf.d/app.conf:ro
+      - audit_storage:/var/www/html/storage
+      - audit_public:/var/www/html/public
+      - ./storage/logs/audit:/var/www/html/storage/logs
+    tmpfs:
+      - /var/www/html/bootstrap/cache
+    ports:
+      - "127.0.0.1:16001:6001"
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_URL: http://localhost:18080
+      FRONTEND_URL: http://localhost:3000
+      DB_CONNECTION: mysql
+      DB_URL: ""
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: elevateu_audit
+      DB_USERNAME: root
+      DB_PASSWORD: elevateu-audit-only
+      CACHE_STORE: database
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: database
+      BROADCAST_CONNECTION: reverb
+      LOG_CHANNEL: single
+      MAIL_MAILER: log
+      BCRYPT_ROUNDS: 4
+      REVERB_APP_ID: elevateu-audit
+      REVERB_APP_KEY: elevateu-audit-public-key
+      REVERB_APP_SECRET: elevateu-audit-only
+      REVERB_HOST: localhost
+      REVERB_PORT: 6001
+      REVERB_SCHEME: http
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - audit_public:/var/www/html/public:ro
+      - audit_storage:/var/www/html/storage:ro
+    ports:
+      - "127.0.0.1:18080:80"
+    depends_on:
+      - laravel-app
+
+volumes:
+  audit_storage:
+  audit_public:

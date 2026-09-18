@@ -12,7 +12,7 @@ Route::get('auth/{provider}/redirect', [SocialLoginController::class, 'redirectT
 Route::get('auth/{provider}/callback', [SocialLoginController::class, 'handleProviderCallback']);
 
 // Authentication Routes (throttled to slow brute-force attempts)
-Route::middleware('throttle:10,1')->group(function () {
+Route::middleware('throttle:public-auth')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);

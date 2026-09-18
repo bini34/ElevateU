@@ -9,6 +9,8 @@ class GroupUser extends Model
 {
     use HasFactory;
 
+    public $incrementing = false;
+
     // Specify the attributes that are mass assignable
     protected $fillable = [
         'group_id',

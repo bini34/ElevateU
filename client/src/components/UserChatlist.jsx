@@ -13,7 +13,7 @@ export default function UserChatlist() {
   const router = useRouter();
   const { authUser } = useContext(AuthContext);
   const { setData } = useData();
-  const { onlineIds } = useOnlineUsers();
+  const { onlineIds, error: presenceError } = useOnlineUsers();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,6 +61,7 @@ export default function UserChatlist() {
 
   return (
     <>
+      {presenceError && <p role="status" className="px-2 text-sm text-amber-700">{presenceError}</p>}
       {cards.map((card) => {
         const online = onlineIds.has(card.user_id);
         const preview = card.last_message

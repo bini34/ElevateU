@@ -12,7 +12,7 @@ class NotificationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = min((int) $request->input('per_page', 15), 50);
+        $perPage = $this->perPage($request, 15);
         $notifications = $request->user()->notifications()->paginate($perPage);
 
         return $this->successResponse($notifications);

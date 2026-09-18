@@ -31,12 +31,16 @@ class AppServiceProvider extends ServiceProvider
         // Baseline rate limit for every API route (per user, else per IP).
         // Chat/feed polling stays comfortably below this; abuse does not.
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            $user = $request->user('api');
+
+            return Limit::perMinute(120)->by($user ? 'user:'.$user->id : 'ip:'.$request->ip());
         });
+
+        RateLimiter::for('public-auth', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
 
         // Password reset links must land on the Next.js client, not the API
         ResetPassword::createUrlUsing(function ($notifiable, string $token) {
-            $frontend = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:3000')), '/');
+            $frontend = rtrim(config('app.frontend_url'), '/');
 
             return $frontend . '/reset-password?token=' . $token . '&email=' . urlencode($notifiable->getEmailForPasswordReset());
         });

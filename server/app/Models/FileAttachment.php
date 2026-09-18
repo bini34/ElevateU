@@ -48,6 +48,10 @@ class FileAttachment extends Model
      */
     public function getUrlAttribute(): string
     {
+        if ($this->message_id) {
+            return url('/api/message-attachments/'.$this->id);
+        }
+
         $path = (string) $this->path;
 
         if (Str::startsWith($path, ['http://', 'https://'])) {
