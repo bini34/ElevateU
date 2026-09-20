@@ -14,6 +14,8 @@ final class IntegrityPreflight
         $db = DB::connection();
         $checks = [];
         $blocking = 0;
+        $migrationBlocking = [];
+        $guarantees = ConstraintSchema::guarantees();
         foreach ((new IntegrityChecks($db))->queries() as $name => $definition) {
             $query = $definition['query'];
             $count = $db->query()->fromSub(clone $query, 'integrity_rows')->count();
@@ -26,12 +28,21 @@ final class IntegrityPreflight
                     )->all();
                 }
             }
-            $checks[$name] = ['count' => $count, 'samples' => $samples, 'severity' => $definition['severity'], 'meaning' => $definition['meaning']];
+            $blocksMigration = $count && in_array($name, ConstraintReadiness::CHECKS, true);
+            if ($blocksMigration) {
+                $migrationBlocking[] = $name;
+            }
+            $state = $blocksMigration ? 'migration_blocking' : (($guarantees[$name] ?? false)
+                ? 'schema_enforced' : ($definition['severity'] === 'blocking' ? 'data_check' : $definition['severity']));
+            $checks[$name] = ['count' => $count, 'samples' => $samples, 'severity' => $definition['severity'],
+                'state' => $state, 'schema_enforced' => $guarantees[$name] ?? false, 'meaning' => $definition['meaning']];
             if ($count && $definition['severity'] === 'blocking') {
                 $blocking++;
             }
         }
 
-        return ['ok' => $blocking === 0, 'blocking_checks' => $blocking, 'checks' => $checks];
+        return ['ok' => $blocking === 0, 'blocking_checks' => $blocking,
+            'constraint_migration_safe' => $migrationBlocking === [], 'migration_blocking_checks' => $migrationBlocking,
+            'schema_guarantees' => $guarantees, 'checks' => $checks];
     }
 }

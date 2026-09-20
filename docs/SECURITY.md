@@ -1,6 +1,42 @@
 # Security and authentication review
 
-## Day 4 database integrity status — 2026-09-20
+## Day 5 database constraints and concurrency — 2026-09-20
+
+Three new migrations enforce at most one profile per user, one group membership per pair and one unordered direct conversation. Virtual canonical participant columns preserve existing conversation IDs/order and cascading FKs; a CHECK also prevents self-conversations. All three migrations refuse dirty target data before DDL. Preflight retains every previous check, adds four data checks and reports live schema enforcement separately from migration blockers and informational references. See [the deployment, rollback and remediation runbook](DATABASE.md).
+
+Repositories recover only their expected unique-key conflict and return the winning row. InnoDB recovery uses a current locking read, including inside an existing repeatable-read transaction. Message creation separately handles concurrent sender/client UUID conflicts after rollback and reauthorizes the original message. Retry paths preserve one message/notification/event. Unexpected database failures still fail; API responses contain only a generic 500 message and logs contain exception class, SQLSTATE code and driver code, without SQL text, bindings or exception traces. SQLSTATE is an internal log field, never an API field. Passport, Reverb, channels and private-file permissions are unchanged.
+
+| Day 5 check | Final result |
+| --- | --- |
+| PHP syntax | Pass: **136 PHP files** |
+| Composer validate `--strict` / audit | Pass / zero advisories |
+| PHPUnit, PHP 8.2.33 | Pass: **67 tests / 560 assertions**, isolated SQLite memory, network disabled |
+| Scoped Pint | Pass: **26 materially changed PHP files** |
+| Full Pint baseline | Fails on **40 existing style-issue files** (46 before Day 5); no suppressed rules or mass formatting |
+| Client `npm ci`, lint, typecheck, tests, build | Pass: **19 tests**, **16 generated pages** |
+| Client full / production audit | Zero vulnerabilities / zero vulnerabilities |
+| Server Vite `npm ci` / build / full and production audits | Pass; **64 modules**; zero vulnerabilities |
+| Fresh MySQL 8.4.11 | All **26 migrations**; empty and seeded preflight clean; 14 invariant checks; 12 deterministic races |
+| Existing MySQL 8.0.46 | Old 23 migrations plus clean fixtures, including a reversed valid pair; three new migrations pass; **all 23 non-ledger original-column hashes/counts unchanged** |
+| MySQL concurrency | Three rounds of four races: **12 races / 24 callers / 12 observed expected-conflict recoveries per run**, passed on 8.0, fresh 8.4 and restored 8.4 |
+| Before/after reproduction | Day 4: two conversations and two memberships. Day 5: **one conversation ID returned to both callers and one membership**, plus one profile; same-key first message returns 201/200, one notification and one event |
+| Dirty migration | Preflight/migration fail intentionally; all **24 table counts, hashes and index inventories unchanged**; duplicates retained until disposable-stack cleanup |
+| Rollback/reapply on clean 8.4 | Three new migrations only; **23 non-ledger table hashes preserved**; no redundant lookup indexes after reapplication |
+| Query plans | Profile, membership and conversation unique indexes selected; `const`, estimated one row |
+| Backup after 8.0 regression → empty 8.4 restore | **All 24 complete table hashes/counts and all 6 attachment byte hashes match**, including conversation IDs/read state and migration ledger; preflight clean |
+| Live suites on 8.0, fresh 8.4 and restored 8.4 | **Feed 51, chat 55, profile 23, notifications 20**, all passing on each stack |
+
+The deterministic fork tests use real InnoDB writes/services/controller notification persistence and barriers after initial SELECT. They capture message and notification broadcast dispatches so cleanup cannot strand jobs for deleted users. Live HTTP/WebSocket suites separately verify actual Reverb/queued delivery, both participants, outsiders, typing, read receipts, private media, removed members and `X-Socket-Id`. They are not production load or process-crash tests.
+
+Failures encountered during implementation were fixed and rerun: two new PHPUnit tests lacked ephemeral Passport keys; the fork controller harness rebound its request after assigning its user resolver; and a source feed run got 500 for an invalid token because an earlier root CLI diagnostic created a non-writable log. Test key setup is shared, request binding is ordered correctly, standalone MySQL failures now reliably exit 1, and the disposable entrypoint precreates/chowns its log. Earlier fork notification jobs could outlive deleted fixtures; dispatch capture now prevents that test artifact. No failing assertion was disabled. Full Pint remains an explicitly reported failure.
+
+The persistent `server_mysql_data` volume and normal application/database containers were not started or modified. All four owned `elevateu-day5-*` projects and their test volumes were removed after verification. No historical migration, dependency lock, frontend source or authentication architecture was changed. Backup SQL, media and keys remain outside Git and require private handling. No commit or production deployment was performed.
+
+Final index inspection found `server/.env` tracked again in the incoming checkout. Day 5 removed it from the index with `git rm --cached` and verified that the local file's bytes were unchanged and ignore rules apply. Its staged deletion should be retained when committing this work. Historical credential rotation/review remains necessary; no values or secret diffs were displayed.
+
+Unresolved: actual-data preflight/remediation/cutover; production-size DDL and backup timing; message/attachment/group/notification retention; post-commit event delivery under process failure; contention outside these four cases; already-subscribed member revocation; historical secret rotation and legacy public media; runtime/image support deadlines; real mail, production TLS and browser accessibility/mobile coverage. Day 6 should address the existing accessibility/responsive foundation iteration, with deployment gates tracked separately. Day 6 is not started.
+
+## Historical Day 4 database integrity status — 2026-09-20
 
 The new [database runbook](DATABASE.md) inventories all 24 tables and separates schema guarantees from application assumptions. `php artisan elevateu:db-preflight` performs 46 read-only checks with bounded UUID samples and redacted ancillary credential identifiers; blocking findings produce a nonzero exit status. No schema constraints were silently applied and no historical migration was rewritten.
 
@@ -201,6 +237,6 @@ Security coverage includes real Passport token issuance/verification, hashing an
 
 The first baseline PHPUnit run accidentally reset only the disposable integration database because Docker environment precedence defeated XML overrides. It invalidated that early feed run. The fail-closed test bootstrap and separate network-disabled runtime fix that isolation defect; subsequent complete integration suites passed. Normal development data was never reset. This incident is preserved in [AUDIT.md](AUDIT.md), not hidden as a passing baseline.
 
-## Remaining release blockers and Day 4
+## Remaining release blockers
 
-Day 4 completes the bounded database inventory/fixture/restore rehearsal described above. Next prioritize reviewed constraint migrations and application race recovery; Day 5 has not started. Keep credential rotation/history review, legacy-media rollout, actual-data MySQL cutover and Next/PHP support deadlines explicit. Active-socket revocation, field minimization, browser auth/chat/media tests, real mail/provider verification, TLS/proxy configuration, production storage recovery and remaining concurrency cases still precede public release.
+Day 5 completes the bounded uniqueness and conflict-recovery work described at the top. Keep credential rotation/history review, legacy-media rollout, actual-data MySQL cutover and Next/PHP support deadlines explicit. Active-socket revocation, field minimization, browser auth/chat/media tests, real mail/provider verification, TLS/proxy configuration, production storage recovery and remaining concurrency cases still precede public release.

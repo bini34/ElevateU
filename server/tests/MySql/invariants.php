@@ -3,6 +3,10 @@
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+set_exception_handler(function (Throwable $error): never {
+    fwrite(STDERR, 'Invariant check failed: '.$error::class.' at '.basename($error->getFile()).':'.$error->getLine()."\n");
+    exit(1);
+});
 
 use App\Models\Comment;
 use App\Models\Group;
@@ -48,6 +52,14 @@ try {
     $like = Like::factory()->create();
     rejects(fn () => DB::table('likes')->insert(['id' => (string) Str::uuid(), 'user_id' => $like->user_id, 'post_id' => $like->post_id]), 1062, 'non-null like pair uniqueness');
     $user = User::factory()->withProfile()->create();
+    rejects(fn () => \App\Models\Profile::factory()->create(['user_id' => $user->id]), 1062, 'one profile per user');
+    $membershipGroup = Group::factory()->create();
+    rejects(fn () => DB::table('group_users')->insert(['group_id' => $membershipGroup->id, 'user_id' => $membershipGroup->owner_id]), 1062, 'one membership per pair');
+    $conversation = \App\Models\Conversation::factory()->create();
+    foreach ([[$conversation->user_id1, $conversation->user_id2], [$conversation->user_id2, $conversation->user_id1], [strtoupper($conversation->user_id1), strtoupper($conversation->user_id2)]] as $order => [$a, $b]) {
+        rejects(fn () => \App\Models\Conversation::create(['user_id1' => $a, 'user_id2' => $b]), 1062, 'canonical pair uniqueness order '.$order);
+    }
+    rejects(fn () => \App\Models\Conversation::create(['user_id1' => $user->id, 'user_id2' => $user->id]), 3819, 'database self-conversation CHECK');
     rejects(fn () => Comment::create(['user_id' => $user->id, 'post_id' => (string) Str::uuid(), 'content' => 'Synthetic fixture']), 1452, 'comment foreign key');
     $message = Message::factory()->create(['client_uuid' => (string) Str::uuid()]);
     $copy = $message->getAttributes();
@@ -68,7 +80,7 @@ try {
     } catch (AuthorizationException) {
         check(true, 'orphan message still fails authorization');
     }
-    check(app(IntegrityPreflight::class)->inspect(0)['checks']['invalid_message_targets']['count'] === 1, 'deletion orphan blocks constraint readiness');
+    check(app(IntegrityPreflight::class)->inspect(0)['checks']['invalid_message_targets']['count'] === 1, 'deletion orphan remains a reported integrity issue');
 } finally {
     DB::rollBack();
 }

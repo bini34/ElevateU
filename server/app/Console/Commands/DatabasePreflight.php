@@ -34,7 +34,7 @@ class DatabasePreflight extends Command
             $this->line(json_encode($report, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         } else {
             $this->info('Read-only database preflight (sample identifiers only; counts may overlap).');
-            $this->table(['Check', 'Severity', 'Count'], collect($report['checks'])->map(fn ($check, $name) => [$name, $check['severity'], $check['count']])->values()->all());
+            $this->table(['Check', 'Severity', 'State', 'Count'], collect($report['checks'])->map(fn ($check, $name) => [$name, $check['severity'], $check['state'], $check['count']])->values()->all());
             foreach ($report['checks'] as $name => $check) {
                 if ($check['count']) {
                     $this->line($name.': '.$check['meaning']);
@@ -42,6 +42,7 @@ class DatabasePreflight extends Command
                 }
             }
             $this->line($report['ok'] ? 'No blocking data violations found. This is not a schema guarantee.' : 'Blocking violations found. No data was changed. Review before migration.');
+            $this->line($report['constraint_migration_safe'] ? 'Profile/membership/conversation data is ready for constraint migration; stop writers before migrating.' : 'Constraint migration is BLOCKED. Follow docs/DATABASE.md remediation; no automatic merge/delete is permitted.');
         }
 
         return $report['ok'] ? self::SUCCESS : self::FAILURE;

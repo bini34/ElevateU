@@ -1,8 +1,8 @@
 # ElevateU development plan
 
-Baseline: 2026-09-17 audit/stabilization, Day 2 security hardening on 2026-09-18, Day 3 dependency/runtime hardening on 2026-09-19, and Day 4 database integrity/upgrade rehearsal completed on 2026-09-20. The 30 iterations below include those first four days; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
+Baseline: audit/stabilization on September 17, security on September 18, dependency/runtime hardening on September 19, and database rehearsal/constraints on September 20, 2026. The 30 iterations include Days 1–5; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
 
-Day 2 implemented transactional authentication/revocation, authorization coverage, private attachments, OAuth shutdown and rate limits. Day 3 moved to Laravel 12, cleared reported npm/Composer advisories, restored allowlisted image optimization and pinned runtimes. Day 4 adds 46 read-only integrity checks, valid factories, guarded deterministic demo data and a verified synthetic MySQL 8.0.46 → 8.4.11 logical restore. Both conversation and membership races are reproduced on MySQL and remain unresolved. No historical migrations or persistent data were changed. See [the database runbook](docs/DATABASE.md), [dependency review](docs/DEPENDENCIES.md) and [security report](docs/SECURITY.md). Day 5 has not started.
+Day 2 implemented transactional authentication/revocation, authorization coverage, private attachments, OAuth shutdown and rate limits. Day 3 moved to Laravel 12, cleared reported dependency advisories, restored allowlisted image optimization and pinned runtimes. Day 4 established fixtures, preflight and synthetic MySQL restore evidence. Day 5 adds three safe constraint migrations and narrow conflict recovery, including concurrent first-message idempotency; 50 data checks and schema inspection now distinguish migration blockers. Historical migrations and persistent data remain untouched. See [the database runbook](docs/DATABASE.md), [dependency review](docs/DEPENDENCIES.md) and [security report](docs/SECURITY.md). Day 6 has not started.
 
 ## 1. Current-state assessment
 
@@ -19,8 +19,8 @@ The audit's exact changes, checks and limitations are in [docs/AUDIT.md](docs/AU
 | P0 | Tracked environment history and unsupported persistent MySQL runtime | Rotate credentials/review history; promote 8.4 only after image patch review, real-data preflight and explicit backed-up cutover; synthetic restore is verified |
 | P0 | Legacy public message copies and incomplete OAuth | New files now private and OAuth disabled; complete the verified legacy rollout and design safe provider identities before reenabling |
 | P1 | Group access checks previously absent | Regression coverage for owner/member/outsider and channel access, including removal |
-| P1 | Schema missing uniqueness/target constraints | Use Day 4 preflight; review duplicate merges and deletion retention, then add safe constraints with migration/rollback evidence |
-| P1 | Reproduced conversation/membership races; concurrent message retries and post-commit broadcasts | Canonical conversation pair and membership uniqueness plus conflict recovery; independently verify same-client-UUID contention and recoverable event delivery |
+| P1 | Existing-data rollout and unresolved target/retention constraints | Day 5 uniqueness is implemented and rehearsed on disposable copies; actual data still needs preflight, reviewed remediation if dirty and an explicit deployment window |
+| P1 | Post-commit broadcasts, other contention and retention rules | Three resource-creation races and concurrent message retry are covered; define recoverable event delivery, like-toggle semantics, auth contention, thread ordering and member-removal races separately |
 | P1 | API integration tests have stateful dependencies; thin component/unit coverage | Disposable deterministic fixtures, CI gates, failure diagnostics |
 | P1 | Cached user state, notification races and repeated fetch logic | Explicit state ownership, cancellation and account-bound cache reset |
 | P2 | Mixed controllers/services/repositories, dead generator scaffolding | Incremental deletion/extraction backed by references and behavior tests |
@@ -51,7 +51,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 | Password recovery/change | Broker, log-mail tests and revocation exist; live mail delivery unverified |
 | Feed | Posts, attachments, pagination/search, likes, comments, ownership checks and edit/delete paths exist |
 | Profile | Username page, profile edit and avatar upload exist; authenticated API even where UI suggests public |
-| Direct chat | Participant checks, text/media, history, read receipts, typing/presence and sequential idempotency exist |
+| Direct chat | Participant checks, text/media, history, read receipts, typing/presence, canonical conversation uniqueness and concurrent first-message idempotency are verified |
 | Group chat | Creation/membership/history/message paths exist; audit repairs access checks; UX/reconnect gaps remain |
 | Notifications | Persistent likes/comments/direct-message activity and queued realtime events exist |
 
@@ -75,7 +75,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 | 2 | Authentication and private media hardening — implemented | OAuth disabled, private attachments deny outsiders, transactional auth/revocation, rate limits and security tests; unresolved release gates documented |
 | 3 | Dependency and runtime hardening — implemented | Laravel 12/Passport-compatible JWT upgrade, patched sharp/public optimizer, all npm/Composer audits zero, image/build/auth/realtime/media checks; remaining deployment gates documented |
 | 4 | Database integrity, fixtures and MySQL 8.4 rehearsal — implemented | 46 read-only checks; guarded valid fixtures; all historical migrations and synthetic restore verified; missing constraints designed; actual MySQL conversation/membership races recorded honestly |
-| 5 | Safe integrity constraints and concurrent conflict handling | Rehearse profile/membership uniqueness and canonical conversation rollout on clean/dirty disposable copies; preserve reviewed merge mappings, reject unreviewed data, handle competing callers and document rollback; settle target-retention rules before related CHECKs |
+| 5 | Safe integrity constraints and concurrent conflict handling — implemented | Profile/membership/canonical pair keys and self CHECK; 12 deterministic races per MySQL run; dirty refusal and clean migration/rollback/restore evidence; target-retention constraints deferred |
 | 6 | Accessibility and responsive foundation | Keyboard-only auth/feed/chat/settings, modal focus, 320/375/768/1440px and 200% zoom checks pass; document shared primitives |
 | 7 | Goal domain design and minimal persistence | Agree goal lifecycle, measurable targets, units, visibility and timezone rules; migration/API validation/ownership tests pass |
 | 8 | Goal creation and management UI | Create/view/edit/archive goals with persisted state, validation and mobile keyboard-accessible workflows |
@@ -104,7 +104,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 
 Each iteration should produce a narrow reviewable change, meaningful tests, updated documentation and an explicit list of remaining risks. Do not carry a failing baseline forward without recording it.
 
-Day 4 evidence changes the next priority: integrity constraints precede new domains. The former Day 5 API/state work is incorporated into iteration 14 and feature acceptance gates. If safe cleanup/conversation migration exceeds one iteration, move feature dates rather than compressing validation. Day 5 is recommended, not automatically started.
+Day 4 evidence moved integrity constraints ahead of new domains; Day 5 now implements and rehearses them. Earlier API/state work remains incorporated into iteration 14 and feature acceptance gates. Actual-data deployment may need a separate window. Day 6 is recommended, not automatically started.
 
 ## 7. Technical risks
 
@@ -120,4 +120,4 @@ Chat lists load every existing conversation plus up to 100 other users; group li
 
 ## 10. Testing gaps
 
-API scripts cover happy paths and selected negative cases, but are not browser automation. Day 4 adds valid/invalid integrity and fixture safety coverage (52 total backend tests / 489 assertions), MySQL FK/unique checks, two concrete race schedules and a synthetic cross-version restore. Still missing: production-sized migration/restore timing, actual-data upgrade checks, simultaneous token/reset/client-UUID contention, process-crash recovery, realtime outages/reconnections, cross-account state, live OAuth/mail, accessibility and mobile browser checks. Unit/component coverage is limited. TypeScript excludes JavaScript checking; there is no PHPStan/Psalm setup. Full Pint retains 46 legacy style failures; all 22 PHP files materially changed on Day 4 pass scoped Pint. Test freshness, coverage and production realism must be reported separately from a green build.
+API scripts cover happy paths and selected negative cases, but are not browser automation. Day 5 passes 67 backend tests / 560 assertions, 14 MySQL invariant checks and 12 deterministic races per run, with clean migration, dirty refusal, rollback and cross-version restore evidence. Still missing: production-sized migration/restore timing, actual-data upgrade checks, simultaneous token/reset contention, process-crash recovery, realtime outages/reconnections, cross-account state, live OAuth/mail, accessibility and mobile browser checks. Unit/component coverage is limited. TypeScript excludes JavaScript checking; no PHPStan/Psalm setup exists. Full Pint retains 40 legacy style failures; all 26 PHP files materially changed on Day 5 pass scoped Pint. Test freshness, coverage and production realism must be reported separately from a green build.

@@ -1,6 +1,70 @@
 # Database integrity and MySQL upgrade runbook
 
-Day 4, September 19–20, 2026. This inventory comes from all 23 migrations, models, repositories and services, with isolated MySQL verification. No historical migration was rewritten and no new constraint was applied. Normal development data was neither migrated nor seeded.
+Updated Day 5, September 20, 2026. The 23 historical migrations remain unchanged; three new migrations enforce profile, membership and unordered conversation uniqueness. All database work used isolated synthetic stacks. The persistent development database was not started, inspected, migrated, seeded or reset.
+
+## Day 5 constraints and creation flow
+
+| Invariant | New migration (September 20, 2026) | Database enforcement |
+| --- | --- | --- |
+| At most one profile per user | `000001_enforce_profile_uniqueness` | `profiles_user_id_unique(user_id)`; does not guarantee every user has a profile |
+| One membership per group/user | `000002_enforce_group_membership_uniqueness` | `group_users_group_id_user_id_unique(group_id,user_id)` |
+| One unordered direct conversation | `000003_enforce_unordered_conversation_uniqueness` | Virtual `participant_low` / `participant_high`, unique `conversations_participants_unique`, CHECK `conversations_distinct_participants` |
+
+Before Day 5, `/conversations/with/{userId}` only looked up a peer and optional conversation. The first message did an OR lookup in both participant orders, then inserted an unconstrained conversation inside its message transaction. Two empty lookups could both insert. Group membership used `firstOrCreate` without a unique index, which had the same race. Profile creation inserted directly.
+
+The GET remains read-only. Application ordering now lives in `App\Support\ConversationParticipants`: validate fixed 8-4-4-4-12 hexadecimal UUID text, lowercase, and compare ASCII bytes. This orders identities, not creation times. New conversation writes store that order. Existing valid reversed rows keep their original columns, IDs and timestamps. The generated MySQL columns derive `LEAST(LOWER(user_id1),LOWER(user_id2))` and `GREATEST(...)`, with `CHAR(36) COLLATE utf8mb4_bin`. For fixed-format hexadecimal UUIDs this agrees with application ordering; exact, reversed and uppercase duplicate insertions are tested on both MySQL versions. SQLite uses equivalent CASE expressions for functional tests; it is not the concurrency evidence.
+
+Virtual generated columns preserve the current cascading participant FKs. Stored generated columns would restrict referential actions on their base columns. A CHECK on the generated pair excludes self-conversations, while the original NOT NULL participant columns exclude missing participants. The migration preflight also rejects malformed UUID text. There is no new global UUID-format constraint on `users`. [MySQL generated columns](https://dev.mysql.com/doc/refman/8.4/en/create-table-generated-columns.html), [CHECK restrictions](https://dev.mysql.com/doc/refman/8.4/en/create-table-check-constraints.html).
+
+`UniqueResource` resolves profile, membership and conversation insertion races. It catches only Laravel's unique-violation subtype and the expected driver/index diagnostic (MySQL 1062; exact SQLite columns). It uses an insert savepoint if a caller already owns a transaction, then reads the committed winner on the writer connection with `FOR UPDATE`. This current read is essential: a normal repeatable-read query can retain the earlier empty snapshot. Missing winners and unrelated failures are rethrown. No global lock or blanket database-error retry is used. [InnoDB consistent reads](https://dev.mysql.com/doc/refman/8.4/en/innodb-consistent-read.html).
+
+Profile retries preserve existing fields; update is a separate operation. Group add remains idempotent 201. Both conversation directions resolve the same ID. Message creation separately catches only `(sender_id,client_uuid)` uniqueness after rolling back the losing transaction, then reauthorizes and returns the original message with `created=false` / HTTP 200. Only `created=true` produces a notification and message broadcast. Reusing a key with different content still returns the original authorized payload; fingerprint/conflict semantics are deferred. Post-commit notification/broadcast failure is not solved by database uniqueness.
+
+## Constraint deployment and dirty-data procedure
+
+1. Use a protected backup of the actual database and media and rehearse on a separate instance. This session's synthetic evidence does not authorize or perform a persistent-data cutover.
+2. Stop API writers and all queue/scheduled/import writers for the migration window. Take a read-only preflight snapshot with `php artisan elevateu:db-preflight --json --sample=5`. A clean snapshot does not prevent later writes; do not migrate under uncontrolled concurrent writers.
+3. Inspect `constraint_migration_safe` and `migration_blocking_checks`. Each of the three migrations checks **all three domains** plus self/null/malformed participants before its DDL. Dirty membership/conversation data therefore blocks even the first profile migration. No rows are deleted, merged, reassigned or rewritten.
+4. On duplicates, stop. Preserve a protected remediation mapping and backup. Select profile field precedence and membership timestamp provenance explicitly. For conversations, map every source ID, message, attachment link, read state, notification reference, last-message pointer and externally used URL/channel ID before deciding whether a manual merge is appropriate. The two informational reference checks identify affected message/pointer IDs without revealing contents. Resolve orphan/retention warnings separately; do not delete history just to obtain a green report.
+5. Apply only approved data repair on a copy first, validate references and compare hashes. No automated merge tool is supplied. Repeat preflight. Once reviewed data is clean, apply `php artisan migrate --force` in the stopped-writer window. MySQL DDL can acquire metadata locks and is not one transaction across all three migrations. Check the ledger/indexes after interruption before resuming; do not assume a partially applied batch rolled back.
+6. Deploy/reload the application and workers after the columns exist; the new repository lookup requires them. Run preflight, schema checks, login, profile, group, message/media and realtime smoke tests, then reopen writers. Do not run new readers against a pre-Day-5 schema.
+
+Rollback drops only the new constraints/generated columns. It preserves every original column and row. Profile/group FK support indexes are restored before removing their unique indexes; reapplication removes the now-redundant support indexes. Stop writers and use compatible application code before schema rollback: dropping guarantees permits duplicates again, and current readers require generated columns. Rollback cannot undo a separately approved manual merge or restore deleted bytes; that requires the protected mapping/backup. Prefer retaining compatible constraints when rolling back application code.
+
+## Day 5 rehearsal and verification commands
+
+Use only `server/docker-compose.test.yml`, a unique project name and unused loopback ports. It uses project-specific storage and tmpfs MySQL, never `server_mysql_data`. Start with `ELEVATEU_TEST_SERVER_IMAGE` pointing to the verified PHP runtime; the entrypoint now creates the log file before setting ownership so root CLI diagnostics cannot prevent HTTP authentication from logging. Run fixture/Artisan commands as `www-data`.
+
+For a **fresh** 8.4 stack: start it, run preflight on empty tables, seed the guarded demo, run preflight again, then run the scripts below. For an **existing-data** rehearsal, start 8.0 with a checkout at the 23-migration Day 4 baseline, seed, stop writers and snapshot. Deploy the three new migrations/application, preflight, migrate, compare original-column hashes and run regressions. Then use the guarded backup/media archive and empty 8.4 restore procedure below. Do not merely start an 8.0 stack at current HEAD and call that an old-schema migration rehearsal.
+
+```text
+php artisan elevateu:db-preflight --json --sample=0
+php tests/MySql/invariants.php
+php tests/MySql/concurrency.php
+php tests/MySql/query-plans.php
+php tests/MySql/snapshot.php
+```
+
+The concurrency script runs three rounds each of reverse-direction first messages, group membership, profile creation and same-key first-message retries: 12 two-process races / 24 callers. Query barriers force both initial lookups to miss; exactly one recovery current-read is required per race. Real database rows and controller notification persistence are checked. Broadcast dispatches are captured locally in these fork tests; separate HTTP/WebSocket suites verify actual Reverb delivery, socket exclusion and the database queue. Unexpected script exceptions exit 1 with safe class/location diagnostics.
+
+On a **separate disposable dirty stack only**, seed and stop writers, then opt in with `ELEVATEU_DIRTY_REHEARSAL=1` when executing `php tests/MySql/dirty-migration.php`. It verifies that the newest three ledger entries are Day 5 migrations before rolling them back, adds deliberate duplicate fixtures, expects preflight/migration failure and compares all 24 table counts/hashes/index inventories. It leaves invalid synthetic data for inspection; discard that owned stack afterwards. Never run this script on development data.
+
+`snapshot.php` reports only counts and hashes. `original_sha256` excludes the two newly derived conversation columns for the pre/post-migration comparison; all other original columns must match. Only the migration ledger is expected to change in that comparison. An 8.0-to-8.4 restore must match full hashes of all 24 tables, including the ledger. Every attachment's existence, metadata size and bytes are checked; demo PNGs also fully decode. Existing HTTP scripts use minimal PNG fixtures, so their byte matching is not evidence of image-decoder safety.
+
+Measured profile, membership and canonical conversation lookups use their unique indexes with EXPLAIN access type `const`, estimated one row. Redundant profile/user and membership/group prefix indexes are absent. Reverse user-membership and original conversation participant FK indexes remain useful and are retained. These are small-fixture query plans, not production-size latency/DDL evidence. Exact results and remaining limits are recorded in [SECURITY.md](SECURITY.md).
+
+## Retention decisions still required
+
+| Domain question | Current behavior | Decision still needed |
+| --- | --- | --- |
+| Delete a conversation? | No direct-conversation delete API; SQL/user cascades can delete conversations and SET NULL message targets | Archive/hide versus delete, participant rights, history/export and erasure rules |
+| Remove a group member? | Historical messages stay; removed members cannot fetch history/media or authorize a new channel subscription | Whether access to pre-removal history should remain; active-socket revocation policy |
+| Delete a group? | Owner endpoint deletes group/memberships; messages remain with null group target and become inaccessible | Retain/archive/purge messages, timelines and privacy expectations |
+| Delete attachment owners/files? | SET NULL can retain orphan attachment metadata; normal post deletion explicitly removes its files; no general orphan collector | Retention duration, private access, transaction-safe retryable file deletion and media backup policy |
+| Notifications? | Persist until separately removed; payload references are not FKs | Expiry, deleted-target display, recipient erasure and cleanup policy |
+| Audit versus privacy? | No agreed audit/erasure model or soft-delete architecture | Minimal audit metadata, access controls, export/erasure scope and retention duration |
+
+No new message/attachment ownership, target or retention constraints were added. Current behavior is documented, not adopted as a final product policy.
 
 ## Database baseline and compatibility
 
@@ -19,10 +83,10 @@ The selected Docker Library image was available as 8.4.11. Oracle also lists **8
 | Timestamp precision | Posts, comments and messages use nullable `TIMESTAMP(6)`; other Eloquent timestamps use precision 0. Fixture microseconds are included in restore hashes |
 | SQL modes | Both connections use `ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION`; no relaxed mode workaround |
 | Foreign keys | Existing business FKs reference primary keys. No dependency on nonunique parent indexes or generated columns was found |
-| Migrations | All 23 existing migrations apply chronologically on an empty 8.4 database. Restored migration history contains the same 23 records |
+| Migrations | All 26 migrations apply on empty 8.4. Day 5 restore retains the 26-entry migration ledger |
 | Data | Restored hashes cover every column, including IDs, relationships, microseconds, UTF-8/emoji text, nullable targets and read state; media bytes are checked separately |
 
-MySQL 8.4 disables the old native-password plugin by default and tightens nonstandard FK behavior. See [8.4 changes](https://dev.mysql.com/doc/refman/8.4/en/mysql-nutshell.html) and [PDO MySQL](https://www.php.net/manual/en/ref.pdo-mysql.php). No stored routines, events, triggers, generated columns or custom SQL functions are declared by this application's migrations. MySQL Shell's upgrade checker, production-scale query plans, external database accounts and real-volume compatibility have not been verified; run the checker against a protected copy of the actual environment before cutover.
+MySQL 8.4 disables the old native-password plugin by default and tightens nonstandard FK behavior. See [8.4 changes](https://dev.mysql.com/doc/refman/8.4/en/mysql-nutshell.html) and [PDO MySQL](https://www.php.net/manual/en/ref.pdo-mysql.php). Day 5 adds two virtual generated conversation columns; migrations declare no stored routines, events, triggers or custom SQL functions. MySQL Shell's upgrade checker, production-scale query plans, external database accounts and real-volume compatibility have not been verified; run the checker against a protected copy of the actual environment before cutover.
 
 ## Actual schema
 
@@ -31,13 +95,13 @@ Unless stated otherwise, `id` is the UUID primary key, `created_at`/`updated_at`
 | Table | Columns, nullability and relationships | Unique/composite indexes and invariant gaps |
 | --- | --- | --- |
 | `users` | UUID PK; required `user_name`, `email`, `password`, `is_admin` (default false); nullable `email_verified_at`, `remember_token`, `blocked_at` | Separate unique username/email; a user can exist without a profile |
-| `profiles` | Required user FK → users CASCADE, first/last name; nullable bio, `profile_picture_URL`, location, birthdate | `user_id` is **not unique** despite `User::profile()` being `hasOne` |
+| `profiles` | Required user FK → users CASCADE, first/last name; nullable bio, `profile_picture_URL`, location, birthdate | Day 5 unique `user_id`; zero profiles remains possible |
 | `posts` | Required author FK → users CASCADE; nullable text content; timestamps(6) | Indexes `created_at`, `(user_id,created_at)`; DB permits an empty post without media |
 | `comments` | Required author FK → users CASCADE and content; nullable post FK → posts CASCADE; timestamps(6) | `(post_id,created_at)`; NULL post is permitted |
 | `likes` | Required user FK → users CASCADE; nullable post FK → posts CASCADE | Unique `(user_id,post_id)` protects non-null pairs; NULL targets are still allowed |
-| `conversations` | Required `user_id1`, `user_id2` FKs → users CASCADE; nullable `last_message_id` → messages SET NULL | No pair uniqueness, ordering or distinct-participant constraint; last message may belong to another thread |
+| `conversations` | Required `user_id1`, `user_id2` FKs → users CASCADE; virtual canonical pair; nullable `last_message_id` → messages SET NULL | Day 5 canonical pair unique + distinct CHECK; last message may still belong to another thread |
 | `groups` | Required name, owner FK → users CASCADE; nullable description, profile picture, last-message FK → messages SET NULL | Owner need not be a member at DB level; pointer need not belong to group |
-| `group_users` | Required group/user FKs, both CASCADE; nullable timestamps | **No primary key, ID or unique pair**; Eloquent relationship/`firstOrCreate` cannot guarantee uniqueness |
+| `group_users` | Required group/user FKs, both CASCADE; nullable timestamps | Day 5 unique `(group_id,user_id)`; no separate ID/declared primary key |
 | `messages` | Required sender FK → users CASCADE; nullable message text, receiver/user FK, conversation FK, group FK (all SET NULL), `read_at`, `client_uuid`; timestamps(6) | Unique `(sender_id,client_uuid)`; indexes `(conversation_id,created_at)`, `(group_id,created_at)`; target exclusivity and participant agreement absent |
 | `file_attachments` | Nullable message/post FKs, both SET NULL; required name(255), path(1024), MIME(255), signed BIGINT size | Neither exactly-one-owner nor nonnegative size enforced; DB does not verify file existence or disk privacy |
 | `notifications` | UUID PK; required type, `notifiable_type`, UUID `notifiable_id`, TEXT data; nullable read timestamp | Indexes `(notifiable_type,notifiable_id)` and `(notifiable_type,notifiable_id,read_at)`; no recipient FK; TEXT does not enforce valid JSON |
@@ -60,14 +124,14 @@ There are 24 tables including the ledger. There are no goal, milestone, check-in
 
 | Expected invariant | Actual guarantee / concrete behavior |
 | --- | --- |
-| Exactly one profile per user | Registration creates both transactionally; DB permits zero or several profiles |
+| Exactly one profile per user | Registration creates both transactionally; DB now permits at most one, but does not require existence |
 | One like per user/post | Unique index works for non-null pairs on MySQL (error 1062); NULL post still allowed |
-| One membership per group/user | Not guaranteed; concurrent service calls produced two identical pivot rows |
-| One conversation per unordered pair | Repository checks both orders before insertion; neither exact nor reversed duplicates are prevented |
+| One membership per group/user | Unique pair plus expected-conflict recovery; concurrent service calls resolve one membership |
+| One conversation per unordered pair | Canonical generated pair unique index rejects exact/reversed duplicates; callers recover one ID |
 | Direct message | `group_id IS NULL`, non-null conversation and receiver; sender/receiver must be the two distinct participants |
 | Group message | Non-null group; conversation and receiver NULL; service checks sender's current membership when sending |
 | Historical group sender | A removed member's older message remains valid history. Current membership is not a retroactive history constraint |
-| Message retry | DB rejects duplicate non-null sender/client UUIDs; sequential API retries work. Simultaneous collisions still need application recovery |
+| Message retry | DB rejects duplicate non-null sender/client UUIDs; sequential and simultaneous first-message retries return the original authorized resource |
 | Attachment ownership | Exactly one existing post/message, valid metadata and readable file on the correct disk; only non-null parent existence is enforced |
 | Thread last-message pointer | FK ensures an existing message, not that it belongs to the same thread or is chronologically newest |
 | Group owner membership | Service autojoins owner and prohibits removing owner; raw SQL can remove owner membership |
@@ -85,13 +149,13 @@ php artisan elevateu:db-preflight
 php artisan elevateu:db-preflight --json --sample=0
 ```
 
-There are **46 checks**: duplicate profiles/memberships/likes/ordered and unordered conversation pairs, reversed pairs, self conversations, missing profiles/owner memberships, 17 business-FK orphan checks, nullable comment/like targets, malformed/empty messages and posts, direct participants, attachment ownership/metadata, two thread pointers, notification recipients/types, and eight ancillary OAuth/session references.
+There are **50 data checks**: the 46 Day 4 checks plus null/malformed conversation participants and message/last-pointer references involving duplicated conversations. Read-only schema metadata also reports the installed uniqueness and self-conversation guarantees. Existing data checks remain active after constraints are installed.
 
-Exit **0** means no blocking data violation; **1** means blocking violations; **2** means an invalid sample option. SQL/connection errors also fail rather than being treated as clean. `unknown_notification_type` is a warning requiring review; all other checks block constraint readiness. `--sample` accepts 0–20, default 5. Output includes meanings, counts and limited UUID samples. OAuth/session credential IDs are redacted; contents, paths, emails, passwords and tokens are never projected.
+Exit **0** means no blocking data violation; **1** means blocking violations; **2** means an invalid sample option. SQL/connection errors fail. The unknown notification type is a warning; the two duplicate-thread reference inventories are informational. Other data violations still affect overall `ok`, while only the six conditions in `ConstraintReadiness::CHECKS` block these three migrations. Review all findings before deployment. `--sample` accepts 0–20, default 5. Output contains meanings, states, counts and bounded UUID samples; credential IDs, content, paths, emails, passwords and tokens are never projected.
 
 Counts can overlap. A duplicate count is the number of duplicate key groups, not the number of excess rows. The command starts a repeatable-read, read-only MySQL transaction and rolls it back; the query catalog contains SELECTs only. Tests verify no data statements are issued. Numeric ancillary user IDs are explicitly cast to strings to avoid false UUID matches through MySQL numeric coercion.
 
-This is a **data-readiness report**, not a guarantee that future writes cannot violate invariants. It does not install constraints, verify file bytes, parse notification JSON, audit stored grants or repair anything. Full scans/groupings can be expensive on a large dataset: use a read-only account, a quiet window and measured runtime. Long snapshots retain undo history. Investigate failures with protected access; do not publish sampled IDs as public telemetry.
+This report observes data and installed schema guarantees. It does not install constraints, verify file bytes, parse notification JSON, audit stored grants or repair anything. Unconstrained rules can still be violated by future writes. Full scans/groupings can be expensive on a large dataset: use a read-only account, a quiet window and measured runtime. Long snapshots retain undo history. Investigate failures with protected access; do not publish sampled IDs as public telemetry.
 
 ## Factories and demo fixtures
 
@@ -124,7 +188,9 @@ docker compose -p elevateu-audit -f server/docker-compose.test.yml exec --user w
 
 `-MaskInput` requires PowerShell 7; use a secret manager or masked input equivalent on older shells. Store a demo password privately if you need to log in as `mira@elevateu.example`. There is no seeder-generated admin. Do not commit the password, and do not use `migrate:fresh` for demo setup. Normal development's database name is intentionally rejected.
 
-## Reproduce the disposable upgrade rehearsal
+## Historical Day 4 disposable upgrade rehearsal
+
+The commands below record the original 23-migration rehearsal. At current HEAD the entrypoint applies 26 migrations and the concurrency script expects one resource. Use the Day 5 old-checkout/deploy sequence above when reproducing a pre-constraint upgrade; project labels alone do not reproduce historical code.
 
 Use the existing Compose file, not the persistent stack. It uses tmpfs MySQL data, no published DB port, explicit test credentials, a masked `.env`, project-scoped media/key volumes and loopback API/Reverb ports. A Docker restart destroys the tmpfs database; make a verified backup outside the container before stopping it. Source files/vendor are read-only. Install dependencies before startup.
 
@@ -239,9 +305,9 @@ For a real cutover, back up and retain the old engine/volume, storage and keys; 
 
 After inspecting each project name, `docker compose -p elevateu-day4-source -f server/docker-compose.test.yml down -v` removes only that disposable project. Repeat for `elevateu-day4-restore` and `elevateu-day4-fresh`. Never substitute normal Compose or remove its MySQL volume. Keep backups outside Git; protect/delete test mail logs and backup artifacts according to their sensitivity.
 
-## Concurrency evidence and safe constraint designs
+## Historical Day 4 concurrency evidence and proposals
 
-`php tests/MySql/concurrency.php` forks two independent PDO connections and pauses each **real repository SELECT** after it returns but before either INSERT. It then invokes the real message/group service paths. On **both 8.0.46 and 8.4.11**, the result is **two conversations for one unordered pair and two memberships for one group/user**. Preflight detects both. The barrier selects a permitted interleaving; it is not a raw-insert substitute or a throughput benchmark.
+The Day 4 version of `tests/MySql/concurrency.php` forked two independent PDO connections and paused each real repository SELECT before INSERT. On both 8.0.46 and 8.4.11 it reproduced two conversations and two memberships. That historical result motivated Day 5. The current script requires one resource and observes expected-conflict recovery; its exact checks are described at the top. Neither version is a throughput benchmark.
 
 The script exits successfully when it reproduces this documented defect, and explicitly labels the races **UNRESOLVED**. After implementing uniqueness, change its expected outcome to one row and verify both callers succeed correctly. A pre-insert existence check, `firstOrCreate`, or a normal transaction alone cannot close these races.
 
@@ -258,10 +324,10 @@ The designs below are proposals for a separate migration iteration. For each, ru
 | Valid last-message pointers | `invalid_conversations_last_message`, `invalid_groups_last_message`; recompute from each thread with stable timestamp/ID order | Retain existing FK; update parent under appropriate thread lock and test concurrent writes/deletes. Cross-thread DB guarantees would need a separately designed composite relationship and careful handling of circular references; not an ad hoc CHECK | Saved old pointers aid review; replacing them does not delete messages. Do not introduce an untested circular cascade |
 | UUID ancillary user IDs | Eight `orphan_oauth_*` / `orphan_sessions_user_id` checks plus schema inspection; numeric legacy IDs cannot safely be inferred as UUIDs | New migrations for auth-code/client/session user ID types, then chosen FKs/retention. Disabled OAuth and array sessions reduce current exposure but do not fix schema. Review existing grants/client flows before enforcing | CHAR36 back to BIGINT is unsafe. Prefer forward repair; retain backup rather than a lossy down conversion |
 
-All index additions need measured lock/DDL behavior on a representative copy; online DDL is not a promise of zero locking. Neither default collation equality nor lowercase UUID normalization should be changed casually. Existing `(sender_id,client_uuid)` uniqueness also needs concurrent duplicate recovery and conflict-payload policy; sequential retry coverage is not sufficient.
+The first three rows above preserve the Day 4 design proposal for historical context; the implemented virtual-column design and deployment order at the top supersede that proposal. All future index additions need measured lock/DDL behavior on a representative copy. Day 5 verifies concurrent sender/client UUID recovery; a different-payload conflict policy and process-crash delivery recovery remain undecided.
 
 ## Day 4 verification and remaining limits
 
 Final commands and results are recorded in [SECURITY.md](SECURITY.md). Fresh and restored schemas, row hashes, actual file bytes, FK/unique rejection, orphan denial and both race schedules are separately checked. No browser visual audit, live mail, production TLS, OS security scan, production-size load test, persistent-data cleanup or actual persistent cutover is claimed.
 
-Day 5 should first implement a narrow, rehearsed constraint rollout (profiles and memberships, then canonical conversations) with explicit dirty-data refusal/merge plans and concurrent conflict recovery. Message/attachment lifecycle constraints require a retention decision first. Do not begin goals or an authentication/UI rewrite to bypass these data guarantees.
+Day 5 implements the bounded constraint rollout described at the top. Message/attachment lifecycle constraints still require a retention decision. Day 6 should follow the controlled accessibility/responsive foundation iteration; no new product domain is started automatically.

@@ -82,7 +82,7 @@ reused and unknown-account reset links share the same 422 response.
 | Method | Path | Notes |
 |--------|------|-------|
 | GET | `/message-cards` | Chat list: conversations (last message, `unread_count`) + users to start with |
-| GET | `/conversations/with/{userId}` | Peer card + `conversation_id` (null until first message) |
+| GET | `/conversations/with/{userId}` | Read-only peer card + `conversation_id` (null until first message); self lookup returns 422 |
 | GET | `/conversations/{id}/messages` | Participants only; newest page first |
 | POST | `/conversations/{id}/read` | Mark incoming as read; broadcasts `messages.read` |
 | POST | `/messages` | multipart: `message` and/or `files[]`, `receiver_id` **or** `group_id`, `client_uuid` (idempotency key — retries return the original, 200 instead of 201) |
@@ -91,12 +91,16 @@ reused and unknown-account reset links share the same 422 response.
 
 ## Groups
 
+Direct participant order does not affect conversation identity or authorization. Concurrent first messages resolve the same conversation ID. A repeated `(sender,client_uuid)` returns the original authorized message with 200; first creation returns 201. Only creation emits the message event and notification. The original payload wins if a key is reused with different content; payload-fingerprint conflict semantics remain a future contract decision. No new conversation-create endpoint exists. Self messaging returns 422 before database insertion.
+
 | Method | Path | Notes |
 |--------|------|-------|
 | POST | `/group` | `name, description, profile_picture`; owner = caller |
 | GET | `/groups/{id}` · PUT `/group/{id}` · DELETE `/group/{id}` | Members can read; owner alone can update/delete. Updates allow name/description only. |
 | POST | `/group/{id}/add-user` · `/group/{id}/remove-user` | Owner only; validated `user_id`; owner cannot be removed |
 | GET | `/users/{userId}/groups` | Own membership list only; another user's list returns 403 |
+
+Adding an existing member, including after a competing add, remains an idempotent 201 success with the existing response envelope. It does not add another pivot row. Profile creation is internal to registration; repeated repository creation returns the existing profile without changing its fields. Updates remain explicit. Unexpected database errors return `{"message":"Server Error"}` with 500, including when debug mode is enabled; SQL, bindings and stack traces are not exposed.
 
 ## Private message attachments
 

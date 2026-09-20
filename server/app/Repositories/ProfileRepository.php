@@ -3,13 +3,15 @@
 namespace App\Repositories;
 
 use App\Models\Profile;
+use App\Support\UniqueResource;
 
 class ProfileRepository
 {
     // Create a new profile
     public function createProfile(array $data)
     {
-        return Profile::create($data);
+        return UniqueResource::resolve(Profile::where('user_id', $data['user_id']), $data,
+            'profiles_user_id_unique', ['profiles.user_id']);
     }
 
     // Update an existing profile
@@ -19,6 +21,7 @@ class ProfileRepository
 
         if ($profile) {
             $profile->update($data);
+
             return $profile;
         }
 

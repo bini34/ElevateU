@@ -1,5 +1,7 @@
 # Local development and verification
 
+Day 5 adds three constraint migrations. Read [DATABASE.md](DATABASE.md) before starting current application code against an existing database: stop writers, run preflight, review dirty data, then migrate before reloading new readers. Never reset the persistent database. Disposable rehearsals now pass 67 backend tests / 560 assertions, 14 MySQL invariant checks and 12 deterministic races per run. Run MySQL scripts only on the isolated audit stack; use `www-data` for Artisan/fixture commands. [SECURITY.md](SECURITY.md) records the exact fresh/upgrade/restore and live regression results. No persistent cutover has been performed.
+
 Use Node.js **22.23.2** (root `.nvmrc`) and Docker Desktop with Linux containers. The client engine range is `^22.23.2`; Node 20 is EOL and is no longer the baseline. PHP/Composer can run in Linux containers. Install locked dependencies, not updates, when reproducing the current state. See [AUDIT.md](AUDIT.md) for the historical assessment, [SECURITY.md](SECURITY.md) for verification and rollout requirements, and [DEPENDENCIES.md](DEPENDENCIES.md) for the current advisory inventory.
 
 ## Runtime baseline

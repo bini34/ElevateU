@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Repositories\ConversationRepository;
 use App\Repositories\FileAttachmentRepository;
 use App\Repositories\MessageRepository;
+use App\Support\UniqueConflict;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,9 @@ use Illuminate\Support\Str;
 class MessageService
 {
     protected $messageRepository;
+
     protected $conversationRepository;
+
     protected $fileAttachmentRepository;
 
     public function __construct(
@@ -41,11 +44,12 @@ class MessageService
      */
     public function createMessage(string $senderId, array $data, array $files = []): array
     {
-        if (!empty($data['client_uuid'])) {
+        if (! empty($data['client_uuid'])) {
             $existing = $this->messageRepository->findBySenderAndClientUuid($senderId, $data['client_uuid']);
             if ($existing) {
                 // Removed members must not recover group content by replaying a key.
                 $this->getMessageById($existing->id, $senderId);
+
                 return ['message' => $existing, 'created' => false];
             }
         }
@@ -60,12 +64,11 @@ class MessageService
                     'client_uuid' => $data['client_uuid'] ?? null,
                 ];
 
-                if (!empty($data['group_id'])) {
+                if (! empty($data['group_id'])) {
                     $this->assertGroupMember($data['group_id'], $senderId);
                     $payload['group_id'] = $data['group_id'];
                 } else {
-                    $conversation = $this->conversationRepository->findConversation($senderId, $data['receiver_id'])
-                        ?: $this->conversationRepository->createConversation($senderId, $data['receiver_id']);
+                    $conversation = $this->conversationRepository->createConversation($senderId, $data['receiver_id']);
 
                     $payload['receiver_id'] = $data['receiver_id'];
                     $payload['conversation_id'] = $conversation->id;
@@ -74,7 +77,7 @@ class MessageService
                 $message = $this->messageRepository->create($payload);
 
                 foreach ($files as $file) {
-                    if (!$file instanceof \Illuminate\Http\UploadedFile) {
+                    if (! $file instanceof \Illuminate\Http\UploadedFile) {
                         continue;
                     }
 
@@ -102,6 +105,15 @@ class MessageService
             foreach ($storedPaths as $path) {
                 Storage::disk('message_attachments')->delete($path);
             }
+            if (! empty($data['client_uuid']) && UniqueConflict::matches($e,
+                'messages_sender_id_client_uuid_unique', ['messages.sender_id', 'messages.client_uuid'])) {
+                $existing = $this->messageRepository->findBySenderAndClientUuid($senderId, $data['client_uuid']);
+                if ($existing) {
+                    $this->getMessageById($existing->id, $senderId);
+
+                    return ['message' => $existing, 'created' => false];
+                }
+            }
             throw $e;
         }
 
@@ -123,7 +135,7 @@ class MessageService
 
         // Deleting a group nulls group_id in the existing schema. An orphaned
         // group message must not become a direct message readable by its sender.
-        if (!$message->conversation_id) {
+        if (! $message->conversation_id) {
             throw new AuthorizationException('You are not part of this conversation.');
         }
 
@@ -196,7 +208,7 @@ class MessageService
 
     protected function assertConversationParticipant(string $conversationId, string $userId): void
     {
-        if (!$this->isConversationParticipant($conversationId, $userId)) {
+        if (! $this->isConversationParticipant($conversationId, $userId)) {
             throw new AuthorizationException('You are not part of this conversation.');
         }
     }
@@ -207,14 +219,14 @@ class MessageService
             ->where('user_id', $userId)
             ->exists();
 
-        if (!$isMember) {
+        if (! $isMember) {
             throw new AuthorizationException('You are not a member of this group.');
         }
     }
 
     protected function storeFile($file): string
     {
-        $filename = Str::uuid() . '.' . $file->extension();
+        $filename = Str::uuid().'.'.$file->extension();
         $path = Storage::disk('message_attachments')->putFileAs('uploads/messages', $file, $filename);
 
         if ($path === false) {

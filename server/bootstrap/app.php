@@ -11,12 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-            then: function () {
-                Route::middleware('api')->prefix('api')->group(base_path('routes/post.php'));
-                Route::middleware('api')->prefix('api')->group(base_path('routes/group.php'));
-                Route::middleware('api')->prefix('api')->group(base_path('routes/message.php'));
-                Route::middleware('api')->prefix('api')->group(base_path('routes/user.php'));
-            },
+        then: function () {
+            Route::middleware('api')->prefix('api')->group(base_path('routes/post.php'));
+            Route::middleware('api')->prefix('api')->group(base_path('routes/group.php'));
+            Route::middleware('api')->prefix('api')->group(base_path('routes/message.php'));
+            Route::middleware('api')->prefix('api')->group(base_path('routes/user.php'));
+        },
     )
     ->withBroadcasting(
         __DIR__.'/../routes/channels.php',
@@ -33,6 +33,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->report(function (\Illuminate\Database\QueryException $error) {
+            \Illuminate\Support\Facades\Log::error('Database operation failed.', [
+                'exception_class' => $error::class,
+                'sqlstate' => $error->errorInfo[0] ?? null,
+                'driver_code' => $error->errorInfo[1] ?? null,
+            ]);
+        })->stop();
+        $exceptions->render(function (\Illuminate\Database\QueryException $error, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['message' => 'Server Error'], 500);
+            }
+        });
         // This is a pure API: always render JSON errors for /api requests
         // (an unauthenticated HTML request would otherwise try to redirect
         // to a web login route that doesn't exist).

@@ -28,13 +28,30 @@ final class IntegrityChecks
                 ->groupBy($columns)->havingRaw('COUNT(*) > 1');
             $add('duplicate_'.$table, $query, 'Duplicate keys (count is key groups, not excess rows).');
         }
-        $low = 'CASE WHEN user_id1 < user_id2 THEN user_id1 ELSE user_id2 END';
-        $high = 'CASE WHEN user_id1 < user_id2 THEN user_id2 ELSE user_id1 END';
+        $low = 'CASE WHEN LOWER(user_id1) < LOWER(user_id2) THEN LOWER(user_id1) ELSE LOWER(user_id2) END';
+        $high = 'CASE WHEN LOWER(user_id1) < LOWER(user_id2) THEN LOWER(user_id2) ELSE LOWER(user_id1) END';
         $pairs = $this->db->table('conversations')->selectRaw("$low as participant_low, $high as participant_high, COUNT(*) as copies")
             ->groupByRaw("$low, $high")->havingRaw('COUNT(*) > 1');
         $add('duplicate_conversation_pairs', clone $pairs, 'Duplicate unordered pairs, including exact and reversed copies.');
         $add('reversed_conversation_pairs', (clone $pairs)->havingRaw('MIN(user_id1) <> MAX(user_id1)'), 'Pairs stored in both participant orders.');
         $add('self_conversations', $this->db->table('conversations')->select('id')->whereColumn('user_id1', 'user_id2'), 'A conversation must have two different users.');
+        $add('null_conversation_participants', $this->db->table('conversations')->select('id')->whereNull('user_id1')->orWhereNull('user_id2'), 'Both participants are required.');
+        $malformed = $this->db->table('conversations')->select('id');
+        if ($this->db->getDriverName() === 'mysql') {
+            $pattern = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+            $malformed->whereRaw('LOWER(user_id1) NOT REGEXP ? OR LOWER(user_id2) NOT REGEXP ?', [$pattern, $pattern]);
+        } else {
+            $pattern = implode('-', array_map(fn ($size) => str_repeat('[0-9a-f]', $size), [8, 4, 4, 4, 12]));
+            $malformed->whereRaw('LOWER(user_id1) NOT GLOB ? OR LOWER(user_id2) NOT GLOB ?', [$pattern, $pattern]);
+        }
+        $add('malformed_conversation_participants', $malformed, 'Participant IDs must be canonical text UUIDs (case-insensitive hex with fixed hyphens).');
+        $duplicateIds = $this->db->table('conversations')->select('conversations.id')
+            ->joinSub(clone $pairs, 'duplicates', fn ($join) => $join
+                ->whereRaw("($low) = duplicates.participant_low AND ($high) = duplicates.participant_high"));
+        $add('messages_in_duplicate_conversations', $this->db->table('messages')->select('id', 'conversation_id')->whereIn('conversation_id', clone $duplicateIds),
+            'Messages needing explicit reassignment if a duplicate thread is manually merged.', 'informational');
+        $add('last_messages_in_duplicate_conversations', $this->db->table('conversations')->select('id', 'last_message_id')->whereNotNull('last_message_id')->whereIn('id', clone $duplicateIds),
+            'Review last-message pointers, read state, notifications and channel IDs before any manual merge.', 'informational');
         $add('missing_profiles', $this->db->table('users as u')->select('u.id')->whereNotExists(function ($q) {
             $q->selectRaw('1')->from('profiles as p')->whereColumn('p.user_id', 'u.id');
         }), 'Users without profiles; uniqueness alone cannot guarantee existence.');

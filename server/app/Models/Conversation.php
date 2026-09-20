@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\GeneratesUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\GeneratesUuid;
 
 class Conversation extends Model
 {
-    use HasFactory, GeneratesUuid;
-        /**
+    use GeneratesUuid, HasFactory;
+
+    /**
      * Disable auto-incrementing as we are using UUID.
      *
      * @var bool
@@ -23,21 +24,27 @@ class Conversation extends Model
      */
     protected $keyType = 'string';
 
-    
+    protected $hidden = ['participant_low', 'participant_high'];
+
     protected $fillable = [
         'user_id1',
         'user_id2',
-        'last_message_id'
+        'last_message_id',
 
     ];
 
-    public function lastMessage(){
+    public function lastMessage()
+    {
         return $this->belongsTo(Message::class, 'last_message_id');
     }
-    public function user1(){
+
+    public function user1()
+    {
         return $this->belongsTo(User::class, 'user_id1');
     }
-    public function user2(){
+
+    public function user2()
+    {
         return $this->belongsTo(User::class, 'user_id2');
     }
 }

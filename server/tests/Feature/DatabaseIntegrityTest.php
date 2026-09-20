@@ -67,6 +67,10 @@ class DatabaseIntegrityTest extends TestCase
 
     public function test_duplicate_profiles_memberships_and_both_conversation_orders_are_reported(): void
     {
+        // Recreate the historical schema only inside this rollback-isolated SQLite test.
+        foreach (array_reverse(glob(database_path('migrations/2026_09_20_*.php'))) as $file) {
+            (require $file)->down();
+        }
         $a = User::factory()->withProfile()->create();
         $b = User::factory()->withProfile()->create();
         Profile::factory()->create(['user_id' => $a->id]);

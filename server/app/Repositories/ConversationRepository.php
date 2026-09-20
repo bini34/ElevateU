@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\Conversation;
+use App\Support\ConversationParticipants;
+use App\Support\UniqueResource;
 
 class ConversationRepository
 {
@@ -16,25 +18,21 @@ class ConversationRepository
     // Check if a conversation exists between two users
     public function findConversation($userId1, $userId2)
     {
-        return $this->conversation
-            ->where(function ($query) use ($userId1, $userId2) {
-                $query->where('user_id1', $userId1)
-                      ->where('user_id2', $userId2);
-            })
-            ->orWhere(function ($query) use ($userId1, $userId2) {
-                $query->where('user_id1', $userId2)
-                      ->where('user_id2', $userId1);
-            })
-            ->first();
+        [$low, $high] = ConversationParticipants::ordered($userId1, $userId2);
+
+        return $this->conversation->where('participant_low', $low)->where('participant_high', $high)->first();
     }
 
     // Create a new conversation between two users
     public function createConversation($userId1, $userId2)
     {
-        return $this->conversation->create([
-            'user_id1' => $userId1,
-            'user_id2' => $userId2,
-        ]);
+        [$low, $high] = ConversationParticipants::ordered($userId1, $userId2);
+
+        return UniqueResource::resolve(
+            $this->conversation->where('participant_low', $low)->where('participant_high', $high),
+            ['user_id1' => $low, 'user_id2' => $high],
+            'conversations_participants_unique', ['conversations.participant_low', 'conversations.participant_high']
+        );
     }
 
     public function updateLastMessageId($conversationId, $messageId)

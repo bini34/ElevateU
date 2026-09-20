@@ -9,6 +9,7 @@ fi
 
 mkdir -p storage/framework/cache/data storage/framework/sessions \
     storage/framework/views storage/framework/testing storage/logs bootstrap/cache
+touch storage/logs/laravel.log
 chown -R www-data:www-data storage bootstrap/cache
 if [ ! -e public/storage ]; then
     php artisan storage:link
