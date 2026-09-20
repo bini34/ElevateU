@@ -293,6 +293,63 @@ async function main() {
   check('attachment has no public storage URL (404)', publicAttachment.status === 404, `got ${publicAttachment.status}`);
   await publicAttachment.arrayBuffer();
 
+  console.log('== Group chat: membership, live delivery and private media ==');
+  const group = await api('/group', { method: 'POST', token: tokenA, body: { name: `Compatibility ${suffix}` } });
+  const groupId = group.json?.data?.id;
+  check('owner creates group', group.status === 201 && !!groupId);
+  if (!groupId) throw new Error('Group setup failed.');
+  const addedMember = await api(`/group/${groupId}/add-user`, { method: 'POST', token: tokenA, body: { user_id: idB } });
+  check('owner adds group member', addedMember.status === 201);
+  const blockedHistory = await api(`/groups/${groupId}/messages`, { token: tokenC });
+  check('outsider cannot read group history', blockedHistory.status === 403);
+  const groupA = makeSocket(tokenA, 'group owner');
+  const groupB = makeSocket(tokenB, 'group member');
+  try {
+    await Promise.all([waitForConnection(groupA), waitForConnection(groupB)]);
+    const [ownerSub, memberSub] = await Promise.all([
+      subscribe(groupA, `private-groups.${groupId}`), subscribe(groupB, `private-groups.${groupId}`),
+    ]);
+    check('owner and member subscribe to group channel', !!ownerSub.channel && !!memberSub.channel);
+    let selfEcho = false;
+    ownerSub.channel.bind('message.sent', () => { selfEcho = true; });
+    const delivered = waitForEvent(memberSub.channel, 'message.sent');
+    const sent = await api('/messages', {
+      method: 'POST', token: tokenA, socketId: groupA.connection.socket_id,
+      body: { group_id: groupId, message: 'Group compatibility check' },
+    });
+    check('group message persists', sent.status === 201);
+    const event = await delivered;
+    check('member receives group message live', event?.message?.id === sent.json?.data?.message?.id && event?.message?.group_id === groupId);
+    await delay(300);
+    check('group sender receives no self-echo', !selfEcho);
+    const history = await api(`/groups/${groupId}/messages`, { token: tokenB });
+    check('member reads persisted group history', history.status === 200 && history.json?.data?.data?.[0]?.message === 'Group compatibility check');
+  } finally {
+    groupA.disconnect();
+    groupB.disconnect();
+  }
+  const groupForm = new FormData();
+  groupForm.append('group_id', groupId);
+  groupForm.append('files[]', new Blob([imageBytes], { type: 'image/png' }), 'group.png');
+  const groupUpload = await api('/messages', { method: 'POST', token: tokenA, form: groupForm });
+  const groupFileId = groupUpload.json?.data?.message?.file_attachments?.[0]?.id;
+  check('group attachment upload succeeds', groupUpload.status === 201 && !!groupFileId);
+  if (!groupFileId) throw new Error('Group attachment setup failed.');
+  const groupDownload = await fetch(`${BASE}/message-attachments/${groupFileId}`, {
+    headers: { Authorization: `Bearer ${tokenB}` }, signal: AbortSignal.timeout(timeoutMs),
+  });
+  check('current member downloads exact group attachment bytes', groupDownload.status === 200 && Buffer.from(await groupDownload.arrayBuffer()).equals(imageBytes));
+  const groupOutsider = await api(`/message-attachments/${groupFileId}`, { token: tokenC });
+  check('outsider cannot download group attachment', groupOutsider.status === 403);
+  const removedMember = await api(`/group/${groupId}/remove-user`, { method: 'POST', token: tokenA, body: { user_id: idB } });
+  check('owner removes group member', removedMember.status === 200);
+  const removedDownload = await api(`/message-attachments/${groupFileId}`, { token: tokenB });
+  check('removed member cannot download group attachment', removedDownload.status === 403);
+  const removedChannel = await api('/broadcasting/auth', {
+    method: 'POST', token: tokenB, body: { socket_id: '1.2', channel_name: `private-groups.${groupId}` },
+  });
+  check('removed member cannot authorize a new group subscription', removedChannel.status === 403);
+
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failures.length) {
     console.log('Failures:');

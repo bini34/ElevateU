@@ -14,7 +14,9 @@ services:
       - mysql
 
   mysql:
-    image: mysql:8.0
+    # 8.0 is EOL. Preserve the existing data format until a backed-up, rehearsed
+    # 8.4 upgrade; never point a new major image at this volume implicitly.
+    image: mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
     container_name: mysql
     environment:
       # Existing volumes retain their original credentials. These defaults are
@@ -28,7 +30,7 @@ services:
     networks:
       - laravel_network
   nginx:
-    image: nginx:latest
+    image: nginx:1.30.5-trixie@sha256:f91bdb7aee4cba26f89b1c5c3aa12742ec3c91c6d70fd7007c6dc797e9676c45
     container_name: nginx
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro

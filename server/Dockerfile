@@ -1,11 +1,11 @@
 # Use an official PHP runtime as a parent image
-FROM php:8.2-fpm
+FROM php:8.2.33-fpm-bookworm@sha256:babbe39d11a6c79895a3155953de5415bd450bab4fa74869e8f786110f359546
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     libpng-dev \
@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     zip \
     unzip \
-    supervisor
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions (pcntl is required by the Reverb websocket server)
 RUN docker-php-ext-install pdo_mysql mbstring gd pcntl
@@ -23,7 +24,7 @@ RUN docker-php-ext-install pdo_mysql mbstring gd pcntl
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.10.3@sha256:a5f59b9fd2faf31218632be4809dc6491761085e8064c31dc3b84378c48c248b /usr/bin/composer /usr/bin/composer
 
 # Copy project files (.dockerignore keeps .env, vendor and uploads out)
 COPY . /var/www/html

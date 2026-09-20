@@ -3,7 +3,8 @@
 # Remove its generated data with the same command prefix followed by down -v.
 services:
   mysql:
-    image: mysql:8.0
+    # Override only for the disposable 8.0 source rehearsal. Never reuse dev data.
+    image: ${ELEVATEU_TEST_MYSQL_IMAGE:-mysql:8.4.11@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a}
     environment:
       MYSQL_ROOT_PASSWORD: elevateu-audit-only
       MYSQL_DATABASE: elevateu_audit
@@ -25,16 +26,16 @@ services:
       - ./supervisord.conf:/etc/supervisor/conf.d/app.conf:ro
       - audit_storage:/var/www/html/storage
       - audit_public:/var/www/html/public
-      - ./storage/logs/audit:/var/www/html/storage/logs
+      - ${ELEVATEU_TEST_LOG_DIR:-./storage/logs/audit}:/var/www/html/storage/logs
     tmpfs:
       - /var/www/html/bootstrap/cache
     ports:
-      - "127.0.0.1:16001:6001"
+      - "127.0.0.1:${ELEVATEU_TEST_WS_PORT:-16001}:6001"
     environment:
       APP_ENV: testing
       APP_DEBUG: "false"
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      APP_URL: http://localhost:18080
+      APP_URL: http://localhost:${ELEVATEU_TEST_API_PORT:-18080}
       FRONTEND_URL: http://localhost:3000
       DB_CONNECTION: mysql
       DB_URL: ""
@@ -61,13 +62,13 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.30.5-trixie@sha256:f91bdb7aee4cba26f89b1c5c3aa12742ec3c91c6d70fd7007c6dc797e9676c45
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - audit_public:/var/www/html/public:ro
       - audit_storage:/var/www/html/storage:ro
     ports:
-      - "127.0.0.1:18080:80"
+      - "127.0.0.1:${ELEVATEU_TEST_API_PORT:-18080}:80"
     depends_on:
       - laravel-app
 

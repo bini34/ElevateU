@@ -2,34 +2,30 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use App\Models\Conversation;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Conversation>
- */
 class ConversationFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        // Fetch valid user IDs
-        $userIds = User::pluck('id')->toArray();
-
-        // Ensure we pick two different users
-        $userId1 = $this->faker->randomElement($userIds);
-        do {
-            $userId2 = $this->faker->randomElement($userIds);
-        } while ($userId2 === $userId1);
-
+        // Independent of existing rows; never loops on a zero/one-user database.
         return [
-            'user_id1' => min($userId1, $userId2),
-            'user_id2' => max($userId1, $userId2),
+            'user_id1' => User::factory()->withProfile(),
+            'user_id2' => User::factory()->withProfile(),
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Conversation $conversation): void {
+            $participants = [$conversation->user_id1, $conversation->user_id2];
+            if ($participants[0] === $participants[1]) {
+                throw new \InvalidArgumentException('A conversation requires distinct participants.');
+            }
+            sort($participants, SORT_STRING);
+            [$conversation->user_id1, $conversation->user_id2] = $participants;
+        });
     }
 }

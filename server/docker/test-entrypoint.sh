@@ -2,7 +2,7 @@
 set -eu
 cd /var/www/html
 
-if [ "${APP_ENV:-}" != "testing" ] || [ "${DB_DATABASE:-}" != "elevateu_audit" ]; then
+if [ "${APP_ENV:-}" != "testing" ] || [ "${DB_DATABASE:-}" != "elevateu_audit" ] || [ "${DB_HOST:-}" != "mysql" ] || [ -n "${DB_URL:-}" ]; then
     echo "The integration entrypoint requires the isolated elevateu_audit database." >&2
     exit 1
 fi
@@ -17,7 +17,8 @@ php artisan migrate --force --no-interaction
 if [ ! -f storage/oauth-private.key ]; then
     php artisan passport:keys --no-interaction
 fi
-# MySQL uses tmpfs and may have restarted while the key volume survived.
-php artisan passport:client --personal --name="ElevateU integration tests" --no-interaction
+# Provision only when absent, including after a tmpfs database restart. A
+# restored database must not gain duplicate clients on every application boot.
+php docker/ensure-test-client.php
 chown -R www-data:www-data storage bootstrap/cache
 exec supervisord -n -c /etc/supervisor/supervisord.conf

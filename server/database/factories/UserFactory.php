@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Profile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -19,12 +20,18 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_name' => $this->faker->name(),
+            'user_name' => 'user_'.Str::lower(Str::random(16)),
             'email' => $this->faker->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    // Bare users remain available for auth/missing-profile failure tests.
+    public function withProfile(): static
+    {
+        return $this->has(Profile::factory(), 'profile');
     }
 
     /**

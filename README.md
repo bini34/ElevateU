@@ -7,31 +7,36 @@ ElevateU is being developed into a social accountability and personal-developmen
 | Layer | Existing stack |
 | --- | --- |
 | Frontend | Next.js 15 App Router, React 18, mostly JavaScript/JSX, Tailwind CSS 3 |
-| API | Laravel 11 / PHP 8.2+, Eloquent, Laravel Passport bearer tokens |
-| Database | MySQL 8, UUID application entities, versioned migrations |
+| API | Laravel 12 / PHP 8.2.33, Eloquent, Laravel Passport 12 bearer tokens |
+| Database | MySQL 8.4 LTS target; 8.4.11 disposable tests, 8.0.46 retained for existing development data; UUID entities and versioned migrations |
 | Realtime | Laravel Reverb, Laravel Echo, Pusher protocol |
 | Local deployment | Docker Compose, nginx, PHP-FPM, Supervisor, database queue worker |
 
-Exact lockfile versions and maintenance concerns are in [Architecture](docs/ARCHITECTURE.md). This audit retains the stack and avoids a broad rewrite.
+Exact lockfile versions and maintenance concerns are in [Architecture](docs/ARCHITECTURE.md). Day 3 retains Next 15/React 18, upgrades Laravel to its supported 12 branch, and restores allowlisted public image optimization with patched sharp. The npm and Composer audit snapshots have no reported findings; that does not make the application production-ready.
+
+Day 4 adds a read-only database preflight, repaired factories and guarded deterministic demo fixtures. A disposable MySQL 8.0 → 8.4 logical restore is verified by row/file hashes and application checks. Missing profile/conversation/membership guarantees and deletion-orphan rules remain explicit migration work; the concurrency tests reproduce both conversation and membership races. Existing development data remains untouched.
 
 ## Documentation
 
 - [Architecture and engineering conventions](docs/ARCHITECTURE.md)
 - [Local development, environment, and deployment](docs/DEVELOPMENT.md)
 - [API and realtime contracts](docs/API.md)
+- [Database inventory, integrity checks, demo fixtures and verified restore workflow](docs/DATABASE.md)
 - [Audit findings, changes, and verification results](docs/AUDIT.md)
-- [Day 2 security decisions and verification](docs/SECURITY.md)
+- [Security decisions, verification and remaining deployment gates](docs/SECURITY.md)
 - [Dependency advisories and controlled upgrades](docs/DEPENDENCIES.md)
 - [30-iteration development plan](DEVELOPMENT_PLAN.md)
 
 ## Local startup
 
-Prerequisites: Node.js 20+ and Docker Desktop with Linux containers. PHP and Composer can run inside Docker. Use lockfiles (`npm ci`, `composer install`) for reproduction.
+Prerequisites: Node.js 22.23.2 (see `.nvmrc`) and Docker Desktop with Linux containers. PHP and Composer can run inside the pinned Docker image. Use lockfiles (`npm ci`, `composer install`) for reproduction. MySQL 8.0 is EOL; the normal stack retains it until an explicit persistent-data cutover using the [rehearsed upgrade procedure](docs/DATABASE.md).
 
 1. Copy `server/.env.example` to `server/.env` only if a local file does not already exist. Configure local database and Reverb settings.
 2. Follow the [first-time API provisioning steps](docs/DEVELOPMENT.md#api-stack). Existing data must not be reset.
 3. Copy `client/.env.example` to `client/.env.local` only if absent, then run `npm ci` and `npm run dev` from `client/`.
 4. Open `http://localhost:3000`. Default development API: `http://localhost:8080/api`; WebSocket port: `6001`.
+
+Public image optimization requires the API/storage origin to be reachable from both the browser and Next runtime. When the client runs in Docker, follow the [image-origin configuration notes](docs/DEVELOPMENT.md#client); `localhost` inside that container refers to the client itself. Private chat attachments continue using authenticated downloads.
 
 The previous `server/.env` was tracked. The audit removes it from Git tracking while retaining the local file. Rotate credentials that appeared in it; removing the current file does not erase Git history. Fresh clones must configure their own environment.
 

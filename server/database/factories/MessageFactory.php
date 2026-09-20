@@ -2,71 +2,49 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
-use App\Models\Group;
 use App\Models\Conversation;
+use App\Models\Group;
 use App\Models\Message;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Message>
- */
 class MessageFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        // Fetch valid user IDs
-        $userIds = User::pluck('id')->toArray();
+        return [
+            'group_id' => null,
+            'conversation_id' => Conversation::factory(),
+            'sender_id' => fn (array $attributes) => Conversation::findOrFail($attributes['conversation_id'])->user_id1,
+            'receiver_id' => fn (array $attributes) => Conversation::findOrFail($attributes['conversation_id'])->user_id2,
+            'message' => 'Checking in after a focused practice session.',
+        ];
+    }
 
-        // Ensure we pick a valid sender
-        $senderId = $this->faker->randomElement($userIds);
+    public function inConversation(Conversation $conversation): static
+    {
+        return $this->state(fn () => [
+            'conversation_id' => $conversation->id, 'group_id' => null,
+            'sender_id' => $conversation->user_id1, 'receiver_id' => $conversation->user_id2,
+        ]);
+    }
 
-        // Define whether this is a group message or P2P message
-        $isGroupMessage = $this->faker->boolean(50); // 50% chance it's a group message
+    public function inGroup(?Group $group = null): static
+    {
+        return $this->state(fn () => [
+            'group_id' => $group ?? Group::factory(),
+            'conversation_id' => null, 'receiver_id' => null,
+            'sender_id' => fn (array $attributes) => Group::findOrFail($attributes['group_id'])->owner_id,
+        ]);
+    }
 
-        if ($isGroupMessage) {
-            // Group message logic
-            $groupId = $this->faker->randomElement(Group::pluck('id')->toArray());
-
-            // Get a valid sender from the group
-            $group = Group::find($groupId);
-            if ($group && $group->users()->exists()) {
-                $senderId = $this->faker->randomElement($group->users->pluck('id')->toArray());
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Message $message): void {
+            if ($message->group_id) {
+                Group::whereKey($message->group_id)->update(['last_message_id' => $message->id]);
+            } else {
+                Conversation::whereKey($message->conversation_id)->update(['last_message_id' => $message->id]);
             }
-
-            return [
-                'sender_id' => $senderId,
-                'receiver_id' => null,  // No receiver for group messages
-                'group_id' => $groupId,
-                'conversation_id' => null,  // No conversation for group messages
-                'message' => $this->faker->realText(200),
-                'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
-                'updated_at' => now(),
-            ];
-        } else {
-            // P2P message logic
-            do {
-                $receiverId = $this->faker->randomElement($userIds);
-            } while ($receiverId === $senderId);  // Ensure receiver is not the sender
-
-            // Create or find the conversation
-            $conversation = Conversation::factory()->create();
-
-
-            return [
-                'sender_id' => $senderId,
-                'receiver_id' => $receiverId,  // P2P message has a receiver
-                'group_id' => null,  // No group ID for P2P messages
-                'conversation_id' => $conversation->id,  // Assign the conversation ID
-                'message' => $this->faker->realText(200),
-                'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
-                'updated_at' => now(),
-            ];
-        }
+        });
     }
 }

@@ -1,6 +1,6 @@
 # Architecture and conventions
 
-Audited 2026-09-17; updated for Day 2 on 2026-09-18. This describes the current implementation; proposed changes are separated in [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md). Implemented does not mean production-ready or fully tested. [SECURITY.md](SECURITY.md) records the security decisions, verification and remaining rollout work.
+Audited 2026-09-17; updated through Day 4 on 2026-09-20. This describes the current implementation; proposed changes are separated in [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md). Implemented does not mean production-ready or fully tested. [SECURITY.md](SECURITY.md) records the security decisions, verification and remaining rollout work.
 
 ## Technology inventory
 
@@ -11,14 +11,17 @@ Audited 2026-09-17; updated for Day 2 on 2026-09-18. This describes the current 
 | TypeScript | ^5 | 5.6.2 |
 | Tailwind CSS | ^3.4.1 | 3.4.11 |
 | Axios | 1.20.0 | 1.20.0 |
+| sharp | 0.35.4 | 0.35.4 |
 | ESLint / eslint-config-next | ^8 / 15.5.25 | 8.57.0 / 15.5.25 |
-| Laravel framework | ^11.9 | 11.56.1 |
-| Passport / Reverb / Socialite | ^12.3 / ^1.0 / ^5.16 | 12.3.0 / 1.11.1 / 5.16.0 |
+| Laravel framework | ^12.61.1 | 12.69.2 |
+| Passport / Reverb / Socialite | ^12.4.3 / ^1.0 / ^5.24.3 | 12.4.3 / 1.11.1 / 5.30.0 |
 | PHPUnit / Pint | ^11.0.1 / ^1.13 | 11.5.56 / 1.18.1 |
 | Laravel Echo / pusher-js | ^1.16.1 / ^8.4.0-rc2 | 1.16.1 / 8.4.0-rc2 |
-| Server Vite | ^5.0 | 5.4.9 |
+| Server Vite / Laravel Vite plugin | 6.4.3 / 1.3.0 | 6.4.3 / 1.3.0 |
 
-PHP is constrained to `^8.2`; Docker uses `php:8.2-fpm` and MySQL `8.0`. Floating image tags do not pin exact deployments. Several locked libraries retain security advisories; [DEPENDENCIES.md](DEPENDENCIES.md) separates patched versions, compensating controls and deferred incompatible upgrades.
+Node is constrained to `^22.23.2`, with `.nvmrc` selecting `22.23.2`. PHP remains constrained to `^8.2`. Docker pins Node `22.23.2-alpine3.24`, PHP `8.2.33-fpm-bookworm`, Composer `2.10.3`, nginx `1.30.5-trixie` and MySQL to exact multi-platform image digests. The disposable database defaults to `8.4.11`; normal development retains `8.0.46` pending an explicit cutover. These pins require deliberate maintenance; system packages installed from apt are not snapshot-pinned. PHP 8.2 has security support only through December 2026; MySQL 8.0 is EOL. Day 4 verifies an 8.4 logical restore using synthetic data, without upgrading an existing development volume. [Database](DATABASE.md) separates compatibility evidence from remaining production patch/cutover gates.
+
+Day 3 full and production-only npm audits for both JavaScript lockfiles, and full and production-only Composer audits, report zero findings. This is a dependency-advisory snapshot, not an application or OS security certification. [DEPENDENCIES.md](DEPENDENCIES.md) records the explicit upgrades and two scoped npm overrides: Next's PostCSS and typescript-estree's minimatch. Next 15, React 18, Passport 12 and Reverb remain in place.
 
 ## Repository map
 
@@ -42,8 +45,8 @@ server/
   app/Notifications/    Database and broadcast notifications
   app/Traits/           UUID and response helpers
   config/               Environment-backed configuration
-  database/             Migrations, factories, development seeder
-  tests/                PHPUnit unit/feature tests
+  database/             Migrations, valid factories, guarded demo fixtures
+  tests/                PHPUnit tests; isolated MySQL invariant/race/snapshot scripts
   resources/            Welcome page and Laravel Vite scaffold
   docker/, nginx/       Startup, upload limits, web-server configuration
 scripts/                Node HTTP/WebSocket integration suites
@@ -83,11 +86,13 @@ Feature functions in `src/lib/` use `src/utils/fetcher.js`. The transport attach
 
 Most source is JavaScript/JSX. Passing TypeScript checks does not prove whole-frontend type safety: `checkJs` is off. Adopt types feature by feature.
 
-Next.js image optimization is temporarily disabled with `images.unoptimized: true` because the retained sharp version has an unresolved advisory. Public images use their original URLs; private chat images use authenticated blobs and an explicit image-MIME allowlist. This avoids the HTTP optimizer path but increases potential image bandwidth and does not patch the dependency.
+Day 3 restores Next.js image optimization after upgrading sharp to `0.35.4`. The image allowlist derives the public API origin from build-time `NEXT_PUBLIC_BACKEND_URL` and permits only `/storage/uploads/avatars/**`, `/storage/uploads/posts/**` and `/storage/uploads/groups/**` beneath its deployment path, without query strings. The existing `static.xx.fbcdn.net` HTTPS origin remains allowed. SVG optimization stays disabled. Local raster assets use the same optimizer, and Next Image continues generating responsive image candidates.
+
+The configured public origin must match Laravel's `APP_URL` storage URLs and be reachable from both the browser and the Next server. Container-local `localhost` cannot reach a separate API container. The separate development client Compose therefore defaults `ELEVATEU_UNOPTIMIZED_IMAGES=true`; override it to `false` with a shared reachable API origin to exercise optimization. Host development and production builds default to optimization enabled; see [Development](DEVELOPMENT.md#client). Private message attachments retain bearer-authenticated downloads and browser blob rendering with an explicit image-MIME allowlist. Neither their API URLs nor legacy public message paths are allowed as remote optimizer inputs.
 
 ## Backend and API organization
 
-`bootstrap/app.php` mounts `routes/api.php` plus user/post/group/message routes under `/api`. Controllers validate inputs and obtain the actor; services handle operations/access checks; repositories build queries. Profiles, notifications and social login also use Eloquent directly in controllers. Layering is partial.
+`bootstrap/app.php` mounts `routes/api.php` plus user/post/group/message routes under `/api`. Controllers validate inputs and obtain the actor; services handle operations/access checks; repositories build queries. Profiles and notifications also use Eloquent directly in controllers. Layering is partial; the disabled social-login controller does not call a provider or link accounts.
 
 Laravel's container injects concrete repositories and services. There is no consistent Policy/API Resource layer, command bus, or microservice boundary. Keep meaningful query helpers; avoid pass-through abstractions solely for symmetry.
 
@@ -127,6 +132,10 @@ The 2024 migrations establish social/Passport tables. July 2026 migrations suppo
 
 Missing database guarantees include unique conversation pairs, unique group membership, one profile per user, and mutually exclusive attachment/message targets. The later OAuth UUID conversion covers access-token user IDs, not every OAuth user-ID column. Assess duplicates before new constraints. Do not rewrite applied migrations or reset populated databases.
 
+[DATABASE.md](DATABASE.md) inventories all table keys, nullable fields, indexes, deletion behavior and planned constraints. `elevateu:db-preflight` runs 46 SELECT-only checks in a read-only MySQL snapshot and returns a failing status for blocking anomalies. Its services live in `app/Services/Database`; the console command only coordinates the snapshot and report. It does not repair data or provide new DB constraints. Group deletion still retains targetless messages; access is denied, while preflight flags them for retention/constraint review.
+
+Factories now generate coherent related records and real synthetic media. Bare `User::factory()` remains available for missing-profile tests; `withProfile()` is the complete-account contract. Default seeding is a no-op. Explicit `DemoSeeder` requires local/testing, enablement, a supplied password and an allowlisted isolated database. It inserts missing deterministic records, preserves existing content/passwords and refuses collisions; no broadcasts or real mail are sent.
+
 Post/profile/group images use Laravel's public disk and `/storage`; legacy committed post images also exist in `server/public/uploads/posts`. New message attachments use the private `message_attachments` disk rooted at `storage/app/private/messages`. Their URLs point to authenticated `/api/message-attachments/{id}`; the controller rechecks direct participants/current group membership, validates the stored path and forces a no-store, no-sniff download. The browser explicitly renders approved image blobs. The unused local disk's temporary signed serving is disabled.
 
 Existing attachment rows retain their paths. During migration, authenticated downloads can read a legacy public copy if its private copy is absent. nginx denies both historical public message prefixes, with equivalent Apache rewrite rules supplied. `media:privatize-messages` inventories by default; `--apply` copies, verifies SHA-256 and then deletes each public source without changing database rows. Normal development data has not been migrated by the audit. Back up and move existing files before serving through another static server such as `php artisan serve`; the fallback alone does not make public copies private. Already downloaded/cached copies cannot be revoked.
@@ -153,10 +162,12 @@ Message/read events broadcast immediately. Activity notifications persist in the
 | `online` | Authenticated presence | Online-user cards |
 | `App.Models.User.{id}` | Matching owner | Activity notifications |
 
-The client uses an Echo singleton, token-reactive hook and shared presence subscription. Account changes, reconnects and missed events remain key regression targets. Membership is checked at subscription; removing a member does not prove an already-open connection is revoked. Sequential sender/client UUID retries are handled; concurrent collision and conversation-creation races need MySQL tests.
+The client uses an Echo singleton, token-reactive hook and shared presence subscription. Account changes, reconnects and missed events remain key regression targets. Membership is checked at subscription; removing a member does not prove an already-open connection is revoked. Sequential sender/client UUID retries are handled. Day 4 MySQL tests reproduce duplicate conversation and membership races on both engines; application conflict recovery and safe uniqueness migrations remain unresolved. Concurrent same-client-UUID recovery still needs coverage.
 
 ## Deployment boundary
 
 Local Compose provides nginx, MySQL and an application container with PHP-FPM/Reverb/queue worker under Supervisor. The client has a standalone image and a separate development Compose file. Public frontend variables are baked into its build. Internal broadcast publishing and public WebSocket endpoints can differ.
 
-The repository has no production hosting implementation, CI gate, TLS termination, backup/restore drill, monitoring or deployment rollback automation. The existing topology is a development baseline.
+The client image runs as a non-root user. The server retains a root Supervisor/FPM master and root Reverb/queue workers; changing that process model requires a separate permissions review. Its build context excludes environment files, Passport private keys, logs and private message storage. Build dependencies and Composer remain in the server image. Day 3 verified both image builds, but did not audit every operating-system package or redesign deployment.
+
+Day 4 adds a verified synthetic logical backup/restore drill and a manual upgrade/rollback runbook. The repository still has no production hosting implementation, CI gate, TLS termination, production backup service, monitoring or automated deployment rollback. The existing topology is a development baseline.

@@ -1,4 +1,62 @@
-# Day 2 security and authentication review
+# Security and authentication review
+
+## Day 4 database integrity status — 2026-09-20
+
+The new [database runbook](DATABASE.md) inventories all 24 tables and separates schema guarantees from application assumptions. `php artisan elevateu:db-preflight` performs 46 read-only checks with bounded UUID samples and redacted ancillary credential identifiers; blocking findings produce a nonzero exit status. No schema constraints were silently applied and no historical migration was rewritten.
+
+Factories now create coherent users/profiles, conversations, memberships, direct/group messages and real decodable media. The deterministic six-user `DemoSeeder` requires local/testing, an allowlisted isolated database, explicit enablement and a supplied password. It preserves existing content/passwords, refuses identity/file collisions and rolls back failed inserts. Default seeding is empty. Run it as the PHP worker user in Docker, not root, to keep upload directories writable.
+
+MySQL **8.4.11** is the disposable compatibility baseline and **8.4 LTS** the intended supported line. Normal development remains on **8.0.46** pending an explicit cutover. The synthetic 8.0 source was migrated/seeded, quiesced, logically dumped with consistency/encoding/object flags, and restored into a separate empty 8.4 database along with media and Passport keys. **All 24 table counts and complete row hashes matched; both attachments matched and fully decoded.** Preflight and actual MySQL constraint checks passed before traffic. A repeated restore refused the populated destination. This verifies a logical restore, not an in-place volume upgrade, replication or a production backup service.
+
+| Day 4 check | Result |
+| --- | --- |
+| Client lint / TypeScript / tests / production build | Pass; 19 tests, 16 generated pages; no UI changes |
+| Isolated PHP syntax / PHPUnit | Pass; 52 tests, 489 assertions; network disabled, SQLite memory, real environment masked |
+| Scoped Pint on materially changed PHP | Pass; 22 files |
+| Full Pint read-only inventory | **Fail: 46 legacy files**, down from 49 because three fixture files were substantively rewritten; no mass formatting |
+| Backend production Docker build | Pass; locked production dependencies and package discovery; demo/preflight smoke also passes without dev dependencies in isolated SQLite memory |
+| Compose configuration / shell syntax | Pass; disposable configuration resolves and changed shell scripts parse |
+| Fresh MySQL 8.4 migrations | Pass; all 23 chronological migrations, empty and seeded preflight clear |
+| MySQL invariant scripts | 8 checks pass on 8.0 source, fresh 8.4 and restored 8.4; verify actual 1062/1452 errors and orphan-message denial |
+| MySQL conversation/membership concurrency | **Both defects reproduced on both engines: 2 rows where 1 is expected**; preflight detects them; not fixed |
+| Synthetic 8.0.46 → 8.4.11 restore | Pass; 24 table hashes, relationship preflight, file size/hash/full image decoding; demo seeder also passes repeated execution; all 46 checks remain clear after restored API regression traffic |
+| Fresh 8.4 HTTP/WebSocket | Feed 51, chat/media/groups 55, profile/password 23, notifications 20; all pass |
+| Restored 8.4 HTTP/WebSocket | Feed 51, chat/media/groups 55, profile/password 23, notifications 20; all pass |
+
+The initial media regression failed because a root-run seeder created upload directories inaccessible to PHP-FPM. The documented worker-user workflow resolves this; all suites were rerun. Running auth-heavy suites without allowing the shared rate-limit window also produced downstream failures; final sequential runs leave the limiter enabled and separate suites by 60 seconds. A fixture PNG passed header inspection but failed full decoding, so it was replaced and a real decoder assertion added; the backup/restore drill was repeated with the corrected file, UTF-8 text and read-state fixtures. A Docker interruption discarded only disposable tmpfs databases; the exported backup and isolated media volume remained available. These failed attempts are retained as findings, not counted as passes.
+
+Missing profile/membership/unordered-conversation uniqueness, message/attachment target rules, deletion orphans, cross-thread last pointers and BIGINT ancillary user IDs remain concrete debt. Day 5 should implement reviewed constraints plus concurrent conflict recovery; strict target CHECKs must wait for an agreed retention policy because current FKs intentionally SET NULL on deletion. The race script's successful exit means it reproduced the known failures, not that the application is race-safe.
+
+Production promotion still requires actual-data preflight/cleanup decisions, a protected-copy upgrade checker run, measured cutover/rollback and MySQL image patch review. Oracle's 8.4.12 image-only security release and Docker Library's tested 8.4.11 package are distinguished in the runbook; no OS patch-parity certification is claimed. Earlier credential rotation, private-media rollout, active-socket revocation, token-storage and deployment gates remain. Normal development containers/data were not migrated, seeded, reset or deduplicated; no dumps or credentials are included in repository changes. No product feature or UI/authentication redesign was added.
+
+All three owned Day 4 Compose projects, their temporary volumes and networks were removed after verification. The normal `server_mysql_data` volume remains present and its application/database containers remain stopped as before the rehearsal. Synthetic backup artifacts stay outside the repository; no commit was created and earlier uncommitted work was preserved.
+
+## Day 3 status — 2026-09-19
+
+The dependency hardening iteration upgrades Laravel to 12.69.2, Passport to 12.4.3, Socialite to 5.30.0, Firebase JWT to 7.1.1 and sharp to 0.35.4. Next 15.5.25, React 18, Passport's bearer architecture and Reverb remain. Both npm lockfiles report **0 full / 0 production findings**; Composer reports **0 full / 0 production advisories**, with no abandoned or filtered records. Exact versions and every advisory are in [DEPENDENCIES.md](DEPENDENCIES.md) and [DEPENDENCY_ADVISORIES.md](DEPENDENCY_ADVISORIES.md). No advisory suppression was added.
+
+Public image optimization is restored by default with patched sharp and a narrow configured-origin allowlist for avatars, posts and group pictures. Private message endpoints and legacy message paths cannot enter the optimizer; authenticated blob delivery remains unchanged. Development Compose serves originals by default solely because its browser-facing localhost API is unreachable inside the Next container; [DEVELOPMENT.md](DEVELOPMENT.md) explains shared-origin configuration. The previous lock already contained a patched nested sharp under Next alongside the vulnerable root copy: Day 2's conservative mitigation is not proof that Next resolved the vulnerable copy. Day 3 eliminates that duplicate/version ambiguity.
+
+Runtime images are version/digest pinned; Node moves from the EOL Docker 20 line to 22.23.2 and PHP receives the 8.2.33 patch. MySQL 8.0.46 is pinned without changing existing data; its EOL status remains a release blocker. PHP 8.2 and Next 15 have near-term support deadlines. Private uploads are now excluded from backend Docker build contexts. OS vulnerability scanning has not been performed.
+
+The final Git-index check found `server/.env` still tracked despite Day 2's removal report. Day 3 stages its removal from version control with `git rm --cached`, verifies the local file is byte-for-byte unchanged, and confirms ignore rules apply. No secret values are reproduced here; previous history and credentials remain subject to rotation/review. Commit the removal alongside this work; no commit or history rewrite was performed by this iteration.
+
+| Day 3 check | Result |
+| --- | --- |
+| Client clean install, lint, typecheck, unit tests, production build | Pass; 19 tests |
+| Server assets clean install/build and all npm/Composer audits | Pass; audits 0 |
+| Composer install/strict validation and PHP syntax | Pass |
+| PHPUnit on PHP 8.2.33 / Laravel 12 | Pass; 37 tests, 375 assertions |
+| Pint | **Fail: same 49 files with legacy style issues**; no global formatting |
+| Frontend/backend Docker builds; Compose/nginx configuration | Pass |
+| Disposable HTTP/WebSocket suites | Feed 51, chat/private and group media 55, profile/password 23, notifications 20; all pass |
+| Standalone image/navigation HTTP smoke | Pass; 26 checks, including resized local/avatar/post images and optimizer rejection of private/legacy/unlisted paths |
+
+The 14 added chat checks cover group membership, live delivery, no self-echo, history, private bytes, outsider denial and fresh download/subscription denial after removal. They do not resolve already-subscribed socket revocation. Tests use separate disposable MySQL/storage and an isolated SQLite PHPUnit runtime; normal development data is preserved.
+
+Credential rotation/history review, legacy-file migration, JavaScript-readable bearer tokens, active-socket revocation, privacy field minimization and the other release gates below remain unresolved. OAuth stays disabled. No schema migration or product feature is part of Day 3.
+
+## Day 2 hardening record — 2026-09-18
 
 Reviewed 2026-09-18. This is a bounded hardening iteration, not a security certification or production release. The existing Next.js/Axios, Laravel Passport, MySQL and Reverb architecture is retained. No goals, streaks, challenges, UI redesign, authentication replacement or database migration was introduced.
 
@@ -14,7 +72,7 @@ Reviewed 2026-09-18. This is a bounded hardening iteration, not a security certi
 | Password/token operations lacked complete transactional guarantees | Registration includes profile and token issuance in one transaction. Login holds the user lock through token issuance. Password change/reset couple password writes and revocation transactionally; reset consumption is serialized. |
 | Restored browser state could trust cached identity; delayed responses could affect a newer login | Hydration revalidates with `/auth/me`; token snapshots guard stale 401/logout/identity responses. Logout reports server-revocation failures. |
 | Upload paths used untrusted filename metadata; arbitrary PHP paths reached FPM | Server-detected extensions/MIME, UUID filenames, existing format/size allowlists and front-controller-only PHP handling. |
-| Vulnerable dependency graph | Controlled compatible updates; unresolved findings remain visible. Image optimization and unused local signed serving are disabled as specific compensating controls. |
+| Vulnerable dependency graph | Day 2 applied compatible updates and temporarily disabled image optimization and unused local signed serving. Day 3 patches the remaining findings and restores public optimization as described above; unused signed serving remains disabled. |
 
 The initial audit also repaired group owner/member authorization and field allowlists. These changes are included in the final regression suite; see [AUDIT.md](AUDIT.md) for the baseline and [DEPENDENCIES.md](DEPENDENCIES.md) for advisory classification and exact versions.
 
@@ -98,7 +156,7 @@ Laravel content-based MIME validation and server-detected extensions replace tru
 
 The four public auth endpoints share 10 requests/minute per IP; all API routes also use 120/minute per Passport user, or IP when unauthenticated. Tests exercise actual 429s and independent users behind one IP. The integration stack uses database cache so limits persist between requests; `array` cache is only for isolated PHPUnit. Multi-replica deployments need a shared cache and correctly configured trusted proxies. The limits are basic abuse controls, not distributed brute-force protection.
 
-The tracked-file inventory and credential-pattern review found the original tracked `server/.env`; it is now staged for removal from version control and still exists locally. No secret values are reproduced in documentation. Ignore rules cover environments, private keys and generated storage/logs; examples contain placeholders. Disposable test credentials/zero application key are deliberately public fixtures, restricted to the isolated test stack, never deployment defaults.
+The tracked-file inventory and credential-pattern review found the original tracked `server/.env`; Day 3 found it still tracked and staged its removal from version control while preserving it locally. No secret values are reproduced in documentation. Ignore rules cover environments, private keys and generated storage/logs; examples contain placeholders. Disposable test credentials/zero application key are deliberately public fixtures, restricted to the isolated test stack, never deployment defaults.
 
 Rotate any previously committed database, mail, OAuth, Reverb and application credentials as applicable; review repository history/access. Coordinate APP_KEY rotation with encrypted-data/session compatibility and Passport key replacement with session invalidation. Keys are not regenerated on ordinary startup. The current cleanup is not proof that Git history or deployed services are clean.
 
@@ -110,11 +168,11 @@ No migrations or constraints were added or rewritten, and normal development dat
 
 Before new constraints: take backups, run read-only duplicate/orphan/type preflight on the actual populated database, agree survivor/merge rules with preserved references, then write a new migration and rehearse both fresh and representative upgrades on disposable MySQL. Existing data was not inspected deeply enough to select safe merge rules tonight. Never rewrite an old migration or reset data to make a unique index pass.
 
-## Dependencies and verification
+## Day 2 dependency and verification snapshot (superseded by Day 3 above)
 
-See [DEPENDENCIES.md](DEPENDENCIES.md) for package-level findings, sources and controlled updates. Frontend audit remains nonzero: **19 total entries (14 high, 4 moderate, 1 low)**; production install **11 (7 high, 3 moderate, 1 low)**. Backend remains **4 advisory records across 2 runtime packages (1 high, 1 medium, 1 low, 1 unrated)**. Neither has a remaining critical finding in this audit snapshot. Package entries and advisory records are different units.
+At the end of Day 2, frontend audit reported **19 total entries (14 high, 4 moderate, 1 low)**; production install **11 (7 high, 3 moderate, 1 low)**. Backend reported **4 advisory records across 2 runtime packages (1 high, 1 medium, 1 low, 1 unrated)**. Package entries and advisory records are different units. The historical evidence below is retained; current Day 3 results supersede it.
 
-Laravel 11 security support ended March 12, 2026 according to the [official support table](https://laravel.com/framework/docs/11.x/releases#support-policy). Remaining framework fixes require a major upgrade. Explicit control-character rejection in auth emails and disabling unused local signed serving reduce specific exposures without claiming the framework is patched. Sharp remains vulnerable in the lockfile; `images.unoptimized: true` disables the Next optimizer route (HTTP 404 verified), with increased original-image bandwidth. Do not reenable it before a reviewed upgrade. No audit exclusions hide these findings.
+Laravel 11 security support ended March 12, 2026 according to the [official support table](https://laravel.com/framework/docs/11.x/releases#support-policy). Day 2 retained it with explicit email control-character rejection and disabled unused local signed serving. Its vulnerable root sharp copy was retained with `images.unoptimized: true` (optimizer HTTP 404 verified). Day 3 completes the reviewed Laravel/sharp upgrades; these statements describe the prior baseline, not the current dependency state.
 
 Commands and isolation details are in [DEVELOPMENT.md](DEVELOPMENT.md#verification).
 
@@ -143,6 +201,6 @@ Security coverage includes real Passport token issuance/verification, hashing an
 
 The first baseline PHPUnit run accidentally reset only the disposable integration database because Docker environment precedence defeated XML overrides. It invalidated that early feed run. The fail-closed test bootstrap and separate network-disabled runtime fix that isolation defect; subsequent complete integration suites passed. Normal development data was never reset. This incident is preserved in [AUDIT.md](AUDIT.md), not hidden as a passing baseline.
 
-## Remaining release blockers and Day 3
+## Remaining release blockers and Day 4
 
-Prioritize a supported Laravel/Passport-compatible dependency migration, remaining compatible transitive updates, and the tested sharp upgrade in a bounded dependency iteration. Keep real credential rotation/history review and legacy-media rollout as explicit deployment gates. Schedule active-socket revocation, response field minimization, safe database constraints, browser auth/chat/media tests, real mail/provider verification, TLS/proxy configuration, storage/backup recovery and concurrency tests before public release. Day 3 has not been started.
+Day 4 completes the bounded database inventory/fixture/restore rehearsal described above. Next prioritize reviewed constraint migrations and application race recovery; Day 5 has not started. Keep credential rotation/history review, legacy-media rollout, actual-data MySQL cutover and Next/PHP support deadlines explicit. Active-socket revocation, field minimization, browser auth/chat/media tests, real mail/provider verification, TLS/proxy configuration, production storage recovery and remaining concurrency cases still precede public release.

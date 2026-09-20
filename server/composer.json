@@ -6,10 +6,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.9",
-        "laravel/passport": "^12.3",
+        "laravel/framework": "^12.61.1",
+        "laravel/passport": "^12.4.3",
         "laravel/reverb": "^1.0",
-        "laravel/socialite": "^5.16",
+        "laravel/socialite": "^5.24.3",
         "laravel/tinker": "^2.9"
     },
     "require-dev": {

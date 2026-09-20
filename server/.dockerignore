@@ -13,6 +13,7 @@
 /storage/framework
 /storage/logs
 /storage/app/public/uploads
+/storage/app/private
 /storage/*.key
 /vendor
 /bootstrap/cache/*.php

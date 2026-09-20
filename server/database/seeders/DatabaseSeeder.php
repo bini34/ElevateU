@@ -2,25 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Message;
-use App\Models\Group;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        User::factory(10)->create();
-
-        Group::factory(5)->create()->each(function ($group) {
-            $group->users()->attach(User::inRandomOrder()->take(3)->pluck('id'));
-        });
-
-        Message::factory(50)->create();
+        // Production initialization has no demo side effects.
+        $this->command?->info('No default seed data. Use the explicitly enabled DemoSeeder in an isolated demo database.');
     }
 }

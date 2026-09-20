@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Group;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,7 +21,14 @@ class GroupFactory extends Factory
         return [
             'name' => $this->faker->company,
             'description' => $this->faker->sentence,
-            'owner_id' => User::factory(),
+            'owner_id' => User::factory()->withProfile(),
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Group $group): void {
+            $group->users()->syncWithoutDetaching([$group->owner_id]);
+        });
     }
 }

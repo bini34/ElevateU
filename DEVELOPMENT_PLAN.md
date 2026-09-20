@@ -1,8 +1,8 @@
 # ElevateU development plan
 
-Baseline: 2026-09-17 audit/stabilization session, followed by Day 2 security hardening on 2026-09-18. The 30 iterations below include those first two days; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in either iteration.
+Baseline: 2026-09-17 audit/stabilization, Day 2 security hardening on 2026-09-18, Day 3 dependency/runtime hardening on 2026-09-19, and Day 4 database integrity/upgrade rehearsal completed on 2026-09-20. The 30 iterations below include those first four days; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
 
-Day 2 implemented transactional authentication/revocation, authorization regression coverage, private attachment delivery, explicit OAuth shutdown, rate limits and controlled dependency updates. Remaining deployment gates include real credential rotation, legacy-file migration, active-socket revocation and unsupported/vulnerable dependencies. See [the security report](docs/SECURITY.md) for final checks and limitations. Day 3 has not started.
+Day 2 implemented transactional authentication/revocation, authorization coverage, private attachments, OAuth shutdown and rate limits. Day 3 moved to Laravel 12, cleared reported npm/Composer advisories, restored allowlisted image optimization and pinned runtimes. Day 4 adds 46 read-only integrity checks, valid factories, guarded deterministic demo data and a verified synthetic MySQL 8.0.46 → 8.4.11 logical restore. Both conversation and membership races are reproduced on MySQL and remain unresolved. No historical migrations or persistent data were changed. See [the database runbook](docs/DATABASE.md), [dependency review](docs/DEPENDENCIES.md) and [security report](docs/SECURITY.md). Day 5 has not started.
 
 ## 1. Current-state assessment
 
@@ -16,11 +16,11 @@ The audit's exact changes, checks and limitations are in [docs/AUDIT.md](docs/AU
 
 | Priority | Debt | Required outcome |
 | --- | --- | --- |
-| P0 | Tracked environment history and vulnerable locked dependencies | Rotate affected credentials, review history exposure, patch supported dependency lines and verify deployment |
+| P0 | Tracked environment history and unsupported persistent MySQL runtime | Rotate credentials/review history; promote 8.4 only after image patch review, real-data preflight and explicit backed-up cutover; synthetic restore is verified |
 | P0 | Legacy public message copies and incomplete OAuth | New files now private and OAuth disabled; complete the verified legacy rollout and design safe provider identities before reenabling |
 | P1 | Group access checks previously absent | Regression coverage for owner/member/outsider and channel access, including removal |
-| P1 | Schema missing uniqueness/target constraints | Existing-data preflight, deduplication decisions, safe migrations and rollback plan |
-| P1 | Concurrent messages/conversations and post-commit broadcast failures | Defined idempotency behavior, race tests and recoverable event delivery |
+| P1 | Schema missing uniqueness/target constraints | Use Day 4 preflight; review duplicate merges and deletion retention, then add safe constraints with migration/rollback evidence |
+| P1 | Reproduced conversation/membership races; concurrent message retries and post-commit broadcasts | Canonical conversation pair and membership uniqueness plus conflict recovery; independently verify same-client-UUID contention and recoverable event delivery |
 | P1 | API integration tests have stateful dependencies; thin component/unit coverage | Disposable deterministic fixtures, CI gates, failure diagnostics |
 | P1 | Cached user state, notification races and repeated fetch logic | Explicit state ownership, cancellation and account-bound cache reset |
 | P2 | Mixed controllers/services/repositories, dead generator scaffolding | Incremental deletion/extraction backed by references and behavior tests |
@@ -65,7 +65,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 - Notifications need race-aware badge/list reconciliation and retryable error states; loading or mutation failure must not appear as success.
 - Forms, modals and navigation need accessible keyboard/focus/error behavior and actual mobile/zoom testing.
 - Search/discovery, profile visibility and exposed personal fields need explicit product/privacy decisions.
-- Seeders/factories must create valid relationships; generated placeholders and infinite-loop risks undermine tests/demo data.
+- Day 4 repaired factory relationships and removed conversation-factory loop risks. Keep demo seeding isolated and serial; it is insert-only/idempotent for its known records, not a concurrent production data repair tool.
 
 ## 6. Thirty-iteration implementation order
 
@@ -73,9 +73,9 @@ API names, database columns and analytics formulas should be agreed and tested i
 | --- | --- | --- |
 | 1 | Repository audit and bounded stabilization — delivered | Architecture, API/workflow docs and plan; targeted runtime/authorization fixes; honest baseline check results |
 | 2 | Authentication and private media hardening — implemented | OAuth disabled, private attachments deny outsiders, transactional auth/revocation, rate limits and security tests; unresolved release gates documented |
-| 3 | Supported dependencies and security rollout readiness | Rehearse Laravel/Passport-compatible upgrade and sharp fix; reduce remaining advisories; validate credential/key rotation and private-storage rollout procedures without resetting data |
-| 4 | Database invariants and fixtures | Preflight existing duplicates; repair factories; safe uniqueness/relationship migrations verified on fresh and representative upgraded MySQL databases |
-| 5 | API contracts, frontend state and failure handling | Extend authorization/error contracts; account-bound cache reset, cancellation, retries/loading/empty/error behavior and component tests |
+| 3 | Dependency and runtime hardening — implemented | Laravel 12/Passport-compatible JWT upgrade, patched sharp/public optimizer, all npm/Composer audits zero, image/build/auth/realtime/media checks; remaining deployment gates documented |
+| 4 | Database integrity, fixtures and MySQL 8.4 rehearsal — implemented | 46 read-only checks; guarded valid fixtures; all historical migrations and synthetic restore verified; missing constraints designed; actual MySQL conversation/membership races recorded honestly |
+| 5 | Safe integrity constraints and concurrent conflict handling | Rehearse profile/membership uniqueness and canonical conversation rollout on clean/dirty disposable copies; preserve reviewed merge mappings, reject unreviewed data, handle competing callers and document rollback; settle target-retention rules before related CHECKs |
 | 6 | Accessibility and responsive foundation | Keyboard-only auth/feed/chat/settings, modal focus, 320/375/768/1440px and 200% zoom checks pass; document shared primitives |
 | 7 | Goal domain design and minimal persistence | Agree goal lifecycle, measurable targets, units, visibility and timezone rules; migration/API validation/ownership tests pass |
 | 8 | Goal creation and management UI | Create/view/edit/archive goals with persisted state, validation and mobile keyboard-accessible workflows |
@@ -84,7 +84,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 | 11 | Daily check-in experience | Check-in flow handles success, duplicate submission, loading/errors and history; no fabricated progress |
 | 12 | Consistency and streak calculations | Document timezone/day-boundary, missed-day and correction semantics; deterministic boundary tests pass |
 | 13 | Personal overview | Goals, next milestones and recent progress use real data; clear zero-data experience replaces social-first entry point |
-| 14 | Goal/check-in history refinement | Useful filters and editing with stable pagination, accessible feedback and regression tests |
+| 14 | History refinement, API contracts and frontend state | Stable history pagination/filtering and editing; account-bound cache reset, cancellation, retries/loading/empty/error behavior and component tests across touched flows |
 | 15 | Meaningful progress sharing | Explicitly opt-in sharing links social posts to actual progress without exposing private goal/check-in data |
 | 16 | Social support UX | Reactions/comments support meaningful encouragement; visibility, deletion and notification behavior tested |
 | 17 | Accountability community model | Clarify group roles, membership/invites and goal-sharing boundaries; safe migration from existing groups |
@@ -104,6 +104,8 @@ API names, database columns and analytics formulas should be agreed and tested i
 
 Each iteration should produce a narrow reviewable change, meaningful tests, updated documentation and an explicit list of remaining risks. Do not carry a failing baseline forward without recording it.
 
+Day 4 evidence changes the next priority: integrity constraints precede new domains. The former Day 5 API/state work is incorporated into iteration 14 and feature acceptance gates. If safe cleanup/conversation migration exceeds one iteration, move feature dates rather than compressing validation. Day 5 is recommended, not automatically started.
+
 ## 7. Technical risks
 
 Backward-incompatible upgrades, old data conflicting with new constraints, account/timezone semantics, realtime ordering, cascade/orphan behavior, large component changes and client/server contract drift are the principal risks. Preserve current URLs/shapes through adapters where needed. Back up data and rehearse migrations; never use `migrate:fresh` as an upgrade strategy.
@@ -118,4 +120,4 @@ Chat lists load every existing conversation plus up to 100 other users; group li
 
 ## 10. Testing gaps
 
-API scripts cover happy paths and selected negative cases, but are not browser automation. Broaden coverage for authorization matrices, concurrent requests, file failures, realtime outages/reconnections, cross-account state, migrations with existing data, invalid/empty input, rate limits, OAuth, real mail, accessibility, mobile layout and backups. Unit/component coverage is minimal. TypeScript excludes JavaScript checking; there is no PHPStan/Psalm setup. Test freshness, coverage and production realism must be reported separately from a green build.
+API scripts cover happy paths and selected negative cases, but are not browser automation. Day 4 adds valid/invalid integrity and fixture safety coverage (52 total backend tests / 489 assertions), MySQL FK/unique checks, two concrete race schedules and a synthetic cross-version restore. Still missing: production-sized migration/restore timing, actual-data upgrade checks, simultaneous token/reset/client-UUID contention, process-crash recovery, realtime outages/reconnections, cross-account state, live OAuth/mail, accessibility and mobile browser checks. Unit/component coverage is limited. TypeScript excludes JavaScript checking; there is no PHPStan/Psalm setup. Full Pint retains 46 legacy style failures; all 22 PHP files materially changed on Day 4 pass scoped Pint. Test freshness, coverage and production realism must be reported separately from a green build.
