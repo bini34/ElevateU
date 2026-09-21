@@ -1,0 +1,105 @@
+/* ElevateU foundations. RGB channels support Tailwind opacity modifiers. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --background: 248 247 243;
+  --foreground: 29 34 47;
+  --surface: 255 255 255;
+  --surface-muted: 242 243 247;
+  --surface-elevated: 255 255 255;
+  --text-muted: 91 97 112;
+  --border: 216 219 228;
+  --border-control: 125 132 150;
+  --border-strong: 39 44 59;
+  --primary: 193 200 250;
+  --primary-hover: 174 185 244;
+  --primary-soft: 237 239 255;
+  --primary-foreground: 29 34 47;
+  --focus: 74 76 162;
+  --success: 27 108 76;
+  --success-soft: 230 245 236;
+  --warning: 128 82 12;
+  --warning-soft: 255 244 211;
+  --danger: 164 43 57;
+  --danger-soft: 255 234 235;
+  --info: 39 89 148;
+  --info-soft: 232 242 253;
+  --on-solid: 255 255 255;
+  --pastel-mint: 223 241 229;
+  --pastel-blue: 224 237 250;
+  --pastel-yellow: 251 239 192;
+  --pastel-peach: 250 227 212;
+  --pastel-lavender: 233 229 248;
+  --pastel-pink: 249 228 237;
+  --scrim: 20 25 38;
+  --shadow-xs: 0 1px 2px rgb(29 34 47 / .04);
+  --shadow-sm: 0 4px 12px rgb(29 34 47 / .06);
+  --shadow-panel: 0 12px 40px rgb(29 34 47 / .1);
+}
+
+/* Opt-in foundation only. Legacy product pages do not enable dark mode yet. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: 22 25 34;
+  --foreground: 240 240 246;
+  --surface: 29 33 44;
+  --surface-muted: 38 43 57;
+  --surface-elevated: 43 48 63;
+  --text-muted: 185 191 208;
+  --border: 68 76 94;
+  --border-control: 139 147 165;
+  --border-strong: 180 187 207;
+  --primary: 193 200 250;
+  --primary-hover: 212 217 255;
+  --primary-soft: 49 53 82;
+  --primary-foreground: 29 34 47;
+  --focus: 193 200 250;
+  --success: 138 221 179;
+  --success-soft: 32 66 52;
+  --warning: 246 213 139;
+  --warning-soft: 69 55 31;
+  --danger: 255 169 178;
+  --danger-soft: 77 40 50;
+  --info: 167 206 252;
+  --info-soft: 35 57 83;
+  --pastel-mint: 36 65 53;
+  --pastel-blue: 38 58 81;
+  --pastel-yellow: 66 58 34;
+  --pastel-peach: 72 49 40;
+  --pastel-lavender: 56 49 77;
+  --pastel-pink: 71 44 62;
+  --on-solid: 29 34 47;
+}
+
+:root {
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --radius-sm: .5rem;
+  --radius-md: .875rem;
+  --radius-lg: 1.25rem;
+  --radius-panel: 1.75rem;
+  --radius-shell: 2rem;
+  --border-width: 1px;
+  --border-width-strong: 2px;
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --ease-standard: cubic-bezier(.2, .7, .2, 1);
+  --type-display: clamp(2rem, 1.5rem + 1.7vw, 2.75rem);
+  --type-h1: clamp(1.625rem, 1.35rem + 1vw, 2.125rem);
+  --type-h2: clamp(1.375rem, 1.2rem + .6vw, 1.625rem);
+  --type-h3: 1.125rem;
+  --type-h4: 1rem;
+  --type-body: 1rem;
+  --type-small: .875rem;
+  --type-label: .875rem;
+  --type-caption: .8125rem;
+  --type-metadata: .75rem;
+  --mobile-nav-height: 4.75rem;
+}

@@ -1,6 +1,6 @@
 # Architecture and conventions
 
-Audited 2026-09-17; updated through Day 4 on 2026-09-20. This describes the current implementation; proposed changes are separated in [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md). Implemented does not mean production-ready or fully tested. [SECURITY.md](SECURITY.md) records the security decisions, verification and remaining rollout work.
+Audited 2026-09-17; updated through Day 6 on 2026-09-21. This describes the current implementation; proposed changes are separated in [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md). Implemented does not mean production-ready or fully tested. [SECURITY.md](SECURITY.md) records the security decisions, verification and remaining rollout work.
 
 ## Technology inventory
 
@@ -28,7 +28,9 @@ Day 3 full and production-only npm audits for both JavaScript lockfiles, and ful
 ```text
 client/
   src/app/              Next routes, layouts, loading boundaries
-  src/components/       Shared social/navigation UI; ui/ media components
+  src/components/       Shared social UI; ui/ typed primitives and media components
+    layout/             Responsive AppShell, AuthLayout, Brand and navigation model
+    design-system/      Development showcase and explicitly illustrative fixtures
   src/context/          Authentication, notifications, generic selection state
   src/hooks/            Feature state, data fetching, Echo/presence lifecycle
   src/lib/              Feature API, token, realtime, formatting helpers
@@ -70,6 +72,7 @@ The root layout supplies fonts, global CSS, toast feedback and React providers. 
 | `/[name]` | Username profile and posts; API access still requires authentication |
 | `/settings`, `/settings/change-profile`, `/settings/change-password` | Account settings |
 | `/notifications` | Notification history and read actions |
+| `/design-system` | Development-only visual/interaction preview; production returns 404 |
 
 React contexts hold authentication, notifications, and generic selected data. Hooks and component state manage fetching, forms, pagination, optimistic updates, and realtime reconciliation. No Redux, Zustand, React Query, or SWR is installed. This custom state logic is useful but has stale-request and lifecycle risks. The local-storage `user` entry supplies a cached `authUser` snapshot, not authoritative identity; hydration revalidates the token through `/auth/me`, including when that cache is absent.
 
@@ -80,8 +83,8 @@ Feature functions in `src/lib/` use `src/utils/fetcher.js`. The transport attach
 - Route files compose screens and interpret parameters. Reusable UI belongs in `components/`, data/lifecycle logic in hooks, and API contracts in `lib/`.
 - Keep the `@/` alias to `src/`, PascalCase component names and `useX` hooks. Avoid mass renames or unrelated formatting during bug fixes.
 - Tailwind utilities provide layouts/breakpoints. Flowbite is installed and configured in Tailwind, but no active UI imports were identified. Multiple icon approaches coexist. Audit dependencies before removing them.
-- Global CSS supplies the reset, gray background, scrollbar helpers and like animation. Geist fonts are loaded, but the body currently specifies Arial; theme variables do not form a complete design system.
-- Desktop uses a sidebar; mobile uses bottom navigation. Nested chat panes and fixed heights require verification for small screens, scroll containment and safe-area overlap.
+- `tokens.css`, global component layers and Tailwind define semantic colors, Geist Sans typography, spacing, radii, borders, shadows and reduced motion. New primitives use existing Lucide icons; the previous global border reset and Arial override are removed. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) documents APIs and adoption rules.
+- AppShell provides a connected desktop sidebar/main/optional contextual rail and a separate mobile header/bottom bar with safe-area spacing. Chat/group master-detail behavior is preserved. Legacy nested panes, overlay focus and real-device virtual keyboards still need feature-level adoption and QA.
 - Every interactive flow should provide loading, empty, success and error states, visible focus and labels. Links navigate; buttons act. These are adoption conventions, not a claim all current components comply.
 
 Most source is JavaScript/JSX. Passing TypeScript checks does not prove whole-frontend type safety: `checkJs` is off. Adopt types feature by feature.

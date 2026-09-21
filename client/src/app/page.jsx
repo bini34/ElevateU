@@ -40,7 +40,7 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="flex flex-col w-full h-auto md:pb-4 relative md:rounded-l-[80px] md:border-l-2 md:border-t-3 md:border-b-3 md:border-r-0 md:border-solid md:border-black bg-white pt-2 md:pt-7 md:pl-7 md:pr-7">
+      <div className="app-page flex flex-col overflow-hidden p-2 md:p-6">
         <div className="flex-grow">
           <div className='hidden md:block'>
             <Header onPostCreated={prependPost} />

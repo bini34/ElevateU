@@ -1,8 +1,8 @@
 # ElevateU development plan
 
-Baseline: audit/stabilization on September 17, security on September 18, dependency/runtime hardening on September 19, and database rehearsal/constraints on September 20, 2026. The 30 iterations include Days 1–5; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
+Baseline: audit/stabilization on September 17, security on September 18, dependency/runtime hardening on September 19, and database rehearsal/constraints on September 20, 2026. The 30 iterations include Days 1–6; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
 
-Day 2 implemented transactional authentication/revocation, authorization coverage, private attachments, OAuth shutdown and rate limits. Day 3 moved to Laravel 12, cleared reported dependency advisories, restored allowlisted image optimization and pinned runtimes. Day 4 established fixtures, preflight and synthetic MySQL restore evidence. Day 5 adds three safe constraint migrations and narrow conflict recovery, including concurrent first-message idempotency; 50 data checks and schema inspection now distinguish migration blockers. Historical migrations and persistent data remain untouched. See [the database runbook](docs/DATABASE.md), [dependency review](docs/DEPENDENCIES.md) and [security report](docs/SECURITY.md). Day 6 has not started.
+Day 2 implemented transactional authentication/revocation, authorization coverage, private attachments, OAuth shutdown and rate limits. Day 3 moved to Laravel 12, cleared reported dependency advisories, restored allowlisted image optimization and pinned runtimes. Day 4 established fixtures, preflight and synthetic MySQL restore evidence. Day 5 adds three safe constraint migrations and narrow conflict recovery, including concurrent first-message idempotency; 50 data checks and schema inspection now distinguish migration blockers. Historical migrations and persistent data remain untouched. See [the database runbook](docs/DATABASE.md), [dependency review](docs/DEPENDENCIES.md) and [security report](docs/SECURITY.md). Day 6 implements the product design system and UI foundation: semantic tokens, typed primitives, a responsive shell, presentational streak/progress components and a development-only preview. Backend/domain behavior is unchanged. See [the design-system guide](docs/DESIGN_SYSTEM.md).
 
 ## 1. Current-state assessment
 
@@ -76,12 +76,12 @@ API names, database columns and analytics formulas should be agreed and tested i
 | 3 | Dependency and runtime hardening — implemented | Laravel 12/Passport-compatible JWT upgrade, patched sharp/public optimizer, all npm/Composer audits zero, image/build/auth/realtime/media checks; remaining deployment gates documented |
 | 4 | Database integrity, fixtures and MySQL 8.4 rehearsal — implemented | 46 read-only checks; guarded valid fixtures; all historical migrations and synthetic restore verified; missing constraints designed; actual MySQL conversation/membership races recorded honestly |
 | 5 | Safe integrity constraints and concurrent conflict handling — implemented | Profile/membership/canonical pair keys and self CHECK; 12 deterministic races per MySQL run; dirty refusal and clean migration/rollback/restore evidence; target-retention constraints deferred |
-| 6 | Accessibility and responsive foundation | Keyboard-only auth/feed/chat/settings, modal focus, 320/375/768/1440px and 200% zoom checks pass; document shared primitives |
-| 7 | Goal domain design and minimal persistence | Agree goal lifecycle, measurable targets, units, visibility and timezone rules; migration/API validation/ownership tests pass |
-| 8 | Goal creation and management UI | Create/view/edit/archive goals with persisted state, validation and mobile keyboard-accessible workflows |
-| 9 | Milestone domain and UI | Ordered measurable milestones belong to goals; completion/edit rules and ownership covered end to end |
-| 10 | Progress/check-in domain | Define progress events versus daily check-ins; idempotency, dates/timezones, corrections and deletion rules tested |
-| 11 | Daily check-in experience | Check-in flow handles success, duplicate submission, loading/errors and history; no fabricated progress |
+| 6 | Product design system and UI foundation — implemented | Semantic tokens, typed accessible primitives, connected responsive shell, presentation-only streak/progress, auth layout foundation, development-only preview and focused tests; legacy page adoption remains |
+| 7 | Authentication UI adoption | Reuse AuthLayout and fields for sign-in, registration and recovery; preserve Passport APIs; keyboard, validation, loading/error and mobile flows pass |
+| 8 | Goal domain design and minimal persistence | Agree lifecycle, measurable units, visibility and timezone rules; ownership, validation and safe migrations before UI |
+| 9 | Goal creation and management UI | Create/view/edit/archive with real persistence; reuse design primitives and test mobile validation/error states |
+| 10 | Milestone domain and UI | Ordered measurable milestones belong to goals; completion/edit rules and ownership covered end to end |
+| 11 | Progress/check-in vertical slice | Define events versus daily check-ins, date/timezone/idempotency/correction rules, then a minimal persisted accessible workflow with duplicate/error states; split the slice if this gate is too large |
 | 12 | Consistency and streak calculations | Document timezone/day-boundary, missed-day and correction semantics; deterministic boundary tests pass |
 | 13 | Personal overview | Goals, next milestones and recent progress use real data; clear zero-data experience replaces social-first entry point |
 | 14 | History refinement, API contracts and frontend state | Stable history pagination/filtering and editing; account-bound cache reset, cancellation, retries/loading/empty/error behavior and component tests across touched flows |
@@ -104,7 +104,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 
 Each iteration should produce a narrow reviewable change, meaningful tests, updated documentation and an explicit list of remaining risks. Do not carry a failing baseline forward without recording it.
 
-Day 4 evidence moved integrity constraints ahead of new domains; Day 5 now implements and rehearses them. Earlier API/state work remains incorporated into iteration 14 and feature acceptance gates. Actual-data deployment may need a separate window. Day 6 is recommended, not automatically started.
+Day 4 evidence moved integrity constraints ahead of new domains; Day 5 now implements and rehearses them. Earlier API/state work remains incorporated into iteration 14 and feature acceptance gates. Actual-data deployment may need a separate window. Day 6 now provides the UI foundation. The next controlled UI iteration is auth adoption (Day 7); it has not started. Goal design moves to Day 8, followed by goal UI and milestones. The progress/check-in slice combines the former domain/UI entries to retain 30 planning slots; reassess scope rather than weakening its acceptance gate. Later feature iterations migrate their existing social screens onto the shared system.
 
 ## 7. Technical risks
 

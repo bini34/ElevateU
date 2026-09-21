@@ -23,7 +23,7 @@ export default function NotificationsPage() {
 
     return (
         <Layout>
-            <div className="flex flex-col w-full min-h-screen bg-white md:rounded-l-[80px] md:border-l-2 md:border-t-3 md:border-b-3 md:border-solid md:border-black overflow-hidden">
+            <div className="app-page flex flex-col overflow-hidden p-2 md:p-6">
                 <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b border-gray-100">
                     <h1 className="font-bold text-xl">Notifications</h1>
                     {unreadCount > 0 && (

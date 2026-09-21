@@ -94,7 +94,7 @@ export default function ProfilePage() {
 
     return (
         <Layout>
-            <div className="flex flex-col w-full min-h-screen bg-white md:rounded-l-[80px] md:border-l-2 md:border-t-3 md:border-b-3 md:border-solid md:border-black overflow-hidden">
+            <div className="app-page flex flex-col overflow-hidden p-2 md:p-6">
                 {/* Header with back button */}
                 <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 flex items-center gap-6">
                     <button

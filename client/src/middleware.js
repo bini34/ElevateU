@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
+  // Block before App Router streaming can turn notFound() into a soft 404.
+  // This exception is scoped to the new preview; product auth rules stay below.
+  const pathname = request.nextUrl.pathname;
+  if (pathname === '/design-system' || pathname.startsWith('/design-system/')) {
+    return process.env.NODE_ENV === 'development'
+      ? NextResponse.next()
+      : new NextResponse('Not found', { status: 404, headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' } });
+  }
   const token = request.cookies.get('token');
 
   if (!token) {
@@ -10,9 +18,10 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
-// Guard the app's authenticated areas. /signin and /signup stay public.
+// Guard authenticated areas and the development-only preview. Auth forms stay public.
 export const config = {
   matcher: [
+    '/design-system/:path*',
     '/',
     '/chat/:path*',
     '/groups/:path*',

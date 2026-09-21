@@ -18,8 +18,8 @@ export default function GroupLayout({ children }) {
 
   return (
     <Layout>
-      <div className="flex flex-col md:flex-row w-full min-h-screen md:rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 md:border-solid md:border-black sm:bg-slate-300">
-        <div className={`${inGroupChat ? 'hidden md:flex' : 'flex'} flex-col gap-4 max-h-screen w-full md:w-[300px] md:pt-20 md:pb-20`}>
+      <div className="app-workspace">
+        <div className={`${inGroupChat ? 'hidden md:flex' : 'flex'} app-workspace-list flex-col gap-4 max-h-screen`}>
           <div className="flex">
             <form className="w-full px-2">
               <div className="relative">
@@ -31,7 +31,7 @@ export default function GroupLayout({ children }) {
                 <input type="search" disabled aria-label="Search is not available yet" className="block w-full p-2 ps-10 text-sm text-gray-900 border ring-black rounded-full bg-gray-50 border-black focus:ring-black focus:border-black" placeholder="Search unavailable" />
               </div>
             </form>
-            <button className='pr-2' onClick={handleButtonClick}>
+            <button aria-label='Create community' className='pr-2' onClick={handleButtonClick}>
               <svg className="w-[36px] h-[36px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                 <path fillRule="evenodd" d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm11-4.243a1 1 0 1 0-2 0V11H7.757a1 1 0 1 0 0 2H11v3.243a1 1 0 1 0 2 0V13h3.243a1 1 0 1 0 0-2H13V7.757Z" clipRule="evenodd" />
               </svg>
@@ -42,7 +42,7 @@ export default function GroupLayout({ children }) {
             <GroupChatList key={listVersion} />
           </div>
         </div>
-        <main className={`${inGroupChat ? 'flex' : 'hidden'} md:flex w-full h-full flex-col justify-start pt-5 overflow-y-auto no-scrollbar bg-white md:rounded-l-[80px] border-l-3 border-t-3 border-b-3 border-r-0 md:border-solid md:border-black relative md:bottom-[15px]`}>
+        <main className={`${inGroupChat ? 'flex' : 'hidden'} app-workspace-main md:flex flex-col justify-start`}>
           {children}
         </main>
 

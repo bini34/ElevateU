@@ -1,4 +1,2 @@
-export default function Loading() {
-    // You can add any UI inside Loading, including a Skeleton.
-    return <div className="flex justify-center items-center w-full"><p>Loading from loading page...</p></div>
-  }
+import { LoadingState } from '@/components/ui/State';
+export default function Loading() { return <LoadingState label="Loading your space" />; }

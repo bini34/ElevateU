@@ -14,10 +14,13 @@ ElevateU is being developed into a social accountability and personal-developmen
 
 Exact lockfile versions and maintenance concerns are in [Architecture](docs/ARCHITECTURE.md). Day 3 retains Next 15/React 18, upgrades Laravel to its supported 12 branch, and restores allowlisted public image optimization with patched sharp. The npm and Composer audit snapshots have no reported findings; that does not make the application production-ready.
 
-Day 4 adds a read-only database preflight, repaired factories and guarded deterministic demo fixtures. A disposable MySQL 8.0 → 8.4 logical restore is verified by row/file hashes and application checks. Missing profile/conversation/membership guarantees and deletion-orphan rules remain explicit migration work; the concurrency tests reproduce both conversation and membership races. Existing development data remains untouched.
+Day 4 adds a read-only database preflight, repaired factories and guarded deterministic demo fixtures. A disposable MySQL 8.0 → 8.4 logical restore is verified by row/file hashes and application checks. Day 5 adds profile, membership and canonical conversation uniqueness plus tested conflict recovery. Persistent-data deployment and deletion/retention rules remain explicit follow-up work; existing development data remains untouched.
+
+Day 6 establishes semantic design tokens, reusable UI primitives, a responsive connected shell and a development-only `/design-system` preview. Streak/progress components are presentation only. Existing product pages adopt the outer shell; full page and authentication redesigns are future iterations.
 
 ## Documentation
 
+- [Design system, responsive shell, component APIs and development preview](docs/DESIGN_SYSTEM.md)
 - [Architecture and engineering conventions](docs/ARCHITECTURE.md)
 - [Local development, environment, and deployment](docs/DEVELOPMENT.md)
 - [API and realtime contracts](docs/API.md)
@@ -44,7 +47,7 @@ The previous `server/.env` was tracked. The audit removes it from Git tracking w
 
 From `client/`: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
-Backend checks and the four HTTP/WebSocket integration suites are documented in [Development](docs/DEVELOPMENT.md#verification). Integration scripts create accounts and content; use the isolated test stack. They are API integration tests, not browser tests. Never clean up by deleting every user with an `@example.com` address.
+Backend checks and the four HTTP/WebSocket integration suites are documented in [Development](docs/DEVELOPMENT.md#verification). Integration scripts create accounts and content; use the isolated test stack. Those four suites are API tests; Day 6 adds separate optional [browser UI suites](docs/DESIGN_SYSTEM.md#development-preview-and-verification). Never clean up by deleting every user with an `@example.com` address.
 
 ## License
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Toaster } from "react-hot-toast";
+import { ToastProvider } from '@/components/ui/ToastProvider';
 import "./globals.css";
 import { DataProvider } from '@/context/DataContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -19,7 +19,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "ElevateU",
-  description: "ElevateU is a social media platform for learning and sharing knowledge.",
+  description: "A place for personal growth, meaningful progress, and shared accountability.",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
         <AuthProvider>
           <NotificationProvider>
             <DataProvider>
-              <Toaster position="top-center" />
+              <ToastProvider />
               {children}
             </DataProvider>
           </NotificationProvider>

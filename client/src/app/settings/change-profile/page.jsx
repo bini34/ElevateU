@@ -109,7 +109,7 @@ export default function ChangeProfile() {
             <h1 className="text-xl font-bold mb-6">Edit profile</h1>
 
             {/* Avatar */}
-            <div className="flex items-center gap-4 bg-gray-50 rounded-2xl p-4 mb-6">
+            <div className="flex flex-wrap items-center gap-4 bg-gray-50 rounded-2xl p-4 mb-6">
                 <Image
                     className="rounded-full object-cover w-16 h-16"
                     width={64}
@@ -117,7 +117,7 @@ export default function ChangeProfile() {
                     src={authUser?.profile?.profile_picture_URL || avator}
                     alt="Your avatar"
                 />
-                <div className="flex flex-col">
+                <div className="flex min-w-0 flex-1 flex-col break-words">
                     <p className="font-semibold">{displayName}</p>
                     <p className="text-sm text-gray-500">@{authUser?.user_name}</p>
                 </div>
@@ -125,7 +125,7 @@ export default function ChangeProfile() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="ml-auto px-4 py-2 rounded-full border border-gray-300 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50"
+                    className="ml-auto w-full sm:w-auto px-4 py-2 rounded-full border border-gray-300 text-sm font-semibold hover:bg-gray-100 disabled:opacity-50"
                 >
                     {uploading ? 'Uploading…' : 'Change photo'}
                 </button>
