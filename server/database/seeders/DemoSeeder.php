@@ -39,7 +39,7 @@ class DemoSeeder extends Seeder
                         $existing = DB::table($table)->where($key)->first();
                         if ($existing) {
                             // Never commandeer a record whose identity/ownership differs.
-                            foreach (['email', 'user_name', 'user_id', 'owner_id', 'user_id1', 'user_id2', 'sender_id', 'receiver_id', 'group_id', 'conversation_id', 'post_id', 'message_id', 'notifiable_id', 'path'] as $field) {
+                            foreach (['email', 'user_name', 'user_id', 'owner_id', 'user_id1', 'user_id2', 'sender_id', 'receiver_id', 'group_id', 'conversation_id', 'post_id', 'message_id', 'notifiable_id', 'path', 'goal_id'] as $field) {
                                 if (array_key_exists($field, $row) && $row[$field] !== $existing->$field) {
                                     throw new \RuntimeException('Demo identifier collision in '.$table.'. No existing row was overwritten.');
                                 }

@@ -78,6 +78,6 @@ final class DemoDataset
             ];
         }
 
-        return $data;
+        return array_merge($data, DemoGoalDataset::rows($time));
     }
 }

@@ -134,6 +134,6 @@ final class IntegrityChecks
                 }), 'Ancillary reference lacks a parent; credential identifiers are redacted.');
         }
 
-        return $checks;
+        return array_merge($checks, GoalIntegrityChecks::queries($this->db));
     }
 }

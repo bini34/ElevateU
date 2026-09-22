@@ -76,4 +76,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(Profile::class, 'user_id');
     }
+
+    public function goals()
+    {
+        return $this->hasMany(Goal::class);
+    }
 }
