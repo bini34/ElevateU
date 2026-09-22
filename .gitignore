@@ -20,7 +20,8 @@
 /docs
 # Mono auto generated files
 mono_crash.*
-
+DEVELOPMENT_PLAN.
+/scripts
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
