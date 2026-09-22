@@ -15,12 +15,17 @@ export function Tooltip({ content, children }: { content: string; children: Reac
   };
   const hide = () => { clearTimeout(timer.current); setPosition(null); };
   useEffect(() => {
-    const dismiss = () => setPosition(null);
+    const dismiss = () => setPosition(previous => {
+      // Keyboard focus must survive a pointer leaving or browser auto-scroll.
+      if (!previous || !wrapper.current?.contains(document.activeElement)) return null;
+      const rect = wrapper.current.getBoundingClientRect();
+      return { left: Math.max(8, Math.min(rect.left, window.innerWidth - 248)), top: Math.min(rect.bottom + 8, window.innerHeight - 80) };
+    });
     window.addEventListener('scroll', dismiss, true);
     window.addEventListener('resize', dismiss);
     return () => { clearTimeout(timer.current); window.removeEventListener('scroll', dismiss, true); window.removeEventListener('resize', dismiss); };
   }, []);
-  return <span ref={wrapper} className="inline-flex" onPointerEnter={show} onPointerLeave={() => { timer.current = setTimeout(hide, 100); }}
+  return <span ref={wrapper} className="inline-flex" onPointerEnter={show} onPointerLeave={() => { timer.current = setTimeout(() => { if (!wrapper.current?.contains(document.activeElement)) hide(); }, 100); }}
     onFocus={show} onBlur={hide} onKeyDown={(event) => { if (event.key === 'Escape' && position) { event.stopPropagation(); hide(); } }}>
     {cloneElement(children, { 'aria-describedby': [children.props['aria-describedby'], position && id].filter(Boolean).join(' ') || undefined })}
     {position && <span id={id} role="tooltip" className="ui-tooltip" style={position} onPointerEnter={() => clearTimeout(timer.current)}>{content}</span>}

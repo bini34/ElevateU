@@ -25,12 +25,12 @@ async function newPage() {
 }
 async function signup(page, first, username) {
   await page.goto(`${base}/signup`, { waitUntil: 'networkidle' });
-  await page.getByLabel('First name', { exact: true }).fill(first);
-  await page.getByLabel('Last name', { exact: true }).fill('DaySix');
-  await page.getByLabel('Username', { exact: true }).fill(username);
-  await page.getByLabel('Email', { exact: true }).fill(`${username}@example.test`);
-  await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByLabel('Confirm password', { exact: true }).fill(password);
+  await page.locator('input[name="first_name"]').fill(first);
+  await page.locator('input[name="last_name"]').fill('DaySix');
+  await page.locator('input[name="user_name"]').fill(username);
+  await page.locator('input[name="email"]').fill(`${username}@example.test`);
+  await page.locator('input[name="password"]').fill(password);
+  await page.locator('input[name="password_confirmation"]').fill(password);
   await page.getByRole('button', { name: 'Sign up', exact: true }).click();
   await page.waitForURL(`${base}/`);
   await page.locator('.app-sidebar').waitFor();
@@ -93,8 +93,8 @@ try {
 
   const login = await newPage();
   await login.goto(`${base}/signin`, { waitUntil: 'networkidle' });
-  await login.getByLabel('Email', { exact: true }).fill(`${aliceName}@example.test`);
-  await login.getByLabel('Password', { exact: true }).fill(password);
+  await login.locator('input[name="email"]').fill(`${aliceName}@example.test`);
+  await login.locator('input[name="password"]').fill(password);
   await login.getByRole('button', { name: 'Sign In', exact: true }).click();
   await login.waitForURL(`${base}/`); await login.getByText(postText, { exact: true }).waitFor(); check(true, 'existing sign-in authenticates a new browser session');
   await login.screenshot({ path: path.join(screenshots, 'live-feed-desktop.png') });

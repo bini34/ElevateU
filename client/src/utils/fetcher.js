@@ -11,7 +11,7 @@ const handleUnauthorized = (url) => {
   // Session expired or token revoked: clear it and send the user to sign in
   removeToken();
   localStorage.removeItem('user');
-  if (!window.location.pathname.startsWith('/signin')) {
+  if (!['/signin', '/signup', '/forget-password', '/reset-password'].includes(window.location.pathname)) {
     window.location.assign('/signin');
   }
 };

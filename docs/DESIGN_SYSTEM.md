@@ -1,6 +1,6 @@
 # ElevateU design system
 
-Day 6, September 20–21, 2026. This is a reusable UI foundation, not a redesign of every product page. No API, authentication, realtime, database or goal/streak domain behavior changes belong to this iteration.
+Day 6 foundation, September 20–21, 2026, with Day 7 authentication adoption documented below. The foundation introduced no API, authentication, realtime, database or goal/streak domain changes. Day 7 refines browser authentication presentation and session routing while preserving the backend contracts.
 
 ## Product personality and visual principles
 
@@ -146,7 +146,7 @@ This illustrates a **caller-owned view model**, not an existing API. `days` cont
 - Mobile <768px: compact brand/account header and separate six-item fixed bottom navigation. Targets are at least 44px. Content reserves navigation height plus `env(safe-area-inset-bottom)`; top header respects the top inset.
 - The mobile bottom bar hides while a text field/contenteditable is focused, leaving room for editing. Native dialogs cap height with dynamic viewport units and scroll internally. Actual iOS/Android virtual keyboards still need device QA.
 - Chat/group master-detail behavior stays intact: list at the parent route, conversation at nested routes. Outer wrappers share the shell; message handling is unchanged.
-- `AuthLayout` is a standalone split brand/illustration/form frame, with an organic rounded panel boundary and a compact stacked mobile version. It never includes app navigation. Actual sign-in/signup/recovery pages have not adopted it yet.
+- `AuthLayout` is a standalone split brand/illustration/form frame, with an organic rounded panel boundary and a compact stacked mobile version. It never includes app navigation. Sign-in/signup/recovery pages adopt it in Day 7 through `AuthPage`.
 
 The skip link targets the shared content region; feature pages retain responsibility for their main landmark and heading structure. Shell changes are not a claim that every legacy screen meets accessibility requirements.
 
@@ -217,4 +217,55 @@ Limitations remain explicit: legacy overlays, clickable conversation/group rows,
 | Use named native actions and preserve focus | Make clickable divs or remove focus without a replacement |
 | Migrate one complete flow and its states | Restyle every page independently or rewrite working APIs |
 
-Recommended Day 7: adopt AuthLayout and form primitives in sign-in, registration and recovery, preserving current Passport contracts, validation, loading/error handling and redirect behavior. Review auth copy, keyboard navigation, field announcements and narrow-screen layouts. Do not start goal/streak persistence as part of that UI adoption. Later iterations migrate feed, communities, messages, profiles and settings one coherent flow at a time.
+Day 7 adopts AuthLayout and form primitives in sign-in, registration and recovery; see the conventions below. Later iterations migrate feed, communities, messages, profiles and settings one coherent flow at a time.
+
+## Authentication experience (Day 7)
+
+The incoming screens duplicated their own shells, icons and form markup. Sign-in/signup had accessible names but lacked consistent visible labels; recovery mixed native validation with toast-only failures. Raw API messages could reach users, password reveal controls were absent, and pending state alone did not synchronously guard repeated submissions. AuthContext had no resolved-session status for public-page redirects. A protected 401 on a reset page could redirect away and lose the reset query. These are the boundaries addressed by this migration.
+
+`components/auth/AuthPage` connects the shared `AuthLayout` to session initialization and safe routing. `AuthBrandPanel` owns the concise brand copy and local, decorative SVG. `AuthForm` composes existing Input/Button controls plus the reusable `PasswordInput`. `useAuthForm` owns submission, pending state, input preservation and focus; `lib/auth-form.ts` owns validation and safe legacy/structured API error translation. Route components provide the screen title and form kind. No additional UI or validation package is required.
+
+- The outer architectural border, warm surface, lavender brand area, periwinkle action, ink text and Geist typography use the Day 6 tokens. Individual fields retain the normal control border.
+- At 768px and above the brand and form share a split layout. Below 768px the brand becomes a compact wordmark header; nonessential copy/art is hidden. Signup names stack on mobile. Layout height is content-driven and the outer padding respects safe areas.
+- Every field has a visible label, stable input name, required semantics and appropriate autocomplete. Required markers are decorative; accessible names omit the marker. Password and confirmation toggles have independent, named buttons, preserve values and remain keyboard reachable.
+- Native forms support Enter. A synchronous ref guards submission before the request starts; the loading CTA disables further submissions and fields become read-only until completion. Failures preserve input. Validation focuses the first invalid field; other errors/success focus a compact inline status. There are no duplicate form-error toasts.
+- Login requires email and password and adds no password-strength rule. Signup/reset match the backend's 8–4096-character password rule and exact confirmation. Name/email lengths match the 255-character limits. The server remains authoritative, including uniqueness and email validation. Passwords are never trimmed.
+- Legacy 400 message arrays and structured 422 field errors are mapped to safe local copy. Unexpected exceptions, network errors, throttling and invalid credentials get generic useful messages. A rate-limit message asks users to wait; it does not invent an exact retry countdown.
+- Forgot-password success is identical for existing and unknown accounts. Reset preserves token/email query data internally, never renders the token as page text, and offers a new-link action for missing/invalid/expired/reused links. Success directs users to sign in without automatically authenticating. If the current cached account matches the reset email, its local session is cleared because the backend revokes its tokens.
+- Auth entry forms wait for session initialization. Only a server-verified session or successful authentication triggers the fixed `/` destination. Cached localStorage identity cannot trigger a redirect. Failed verification offers retry or explicit local sign-in recovery. Reset links remain usable by authenticated users, and a stale-token 401 does not discard public auth-page query state.
+- OAuth UI stays hidden because the existing endpoints are intentionally disabled. No remember-me toggle is shown because token persistence has no corresponding choice. No Terms/Privacy checkbox or legal links are added without actual policy routes and agreement requirements.
+
+Passport, bearer-cookie storage, API payloads, backend validation, rate limits and session revocation rules are unchanged. JavaScript-readable tokens remain an XSS risk; the documented future HttpOnly migration is separate work. Password-change settings and broader product screens are outside this migration.
+
+Onboarding is deferred. A later persisted flow may connect profile, goals, interests and community choices, but first requires real domain schemas, owned APIs, visibility/consent decisions and resumable server-side state. No production onboarding route, localStorage-only completion or sample domain data is introduced.
+
+### Reproducing authentication verification
+
+Use the same external Playwright installation described above. Start a distinct disposable Compose project with log mail and point the frontend at its API/WebSocket ports. Set `ELEVATEU_DISPOSABLE_UI_TEST=true` and `ELEVATEU_TEST_LOG_PATH` to that project's `laravel.log`, then run `node scripts/auth-experience-e2e.mjs`. Never point it at persistent data. It creates synthetic users and uses a real logged reset token without printing credentials/tokens. Real successful requests are paced for the existing public-auth limiter. Explicit 429/500/network cases use browser request fault injection and do not stand in for successful integration tests.
+
+The auth suite covers real registration/login, duplicate fields, keyboard and reveal controls, double-submit protection, known/unknown recovery, reset/reuse/revocation, session routing and mobile/tablet/desktop reflow. Continue running the separate design-system and existing-product browser suites. Native mobile keyboards, actual password-manager autofill and screen-reader sessions still require device/assistive-technology QA; autocomplete and browser semantics alone do not certify those integrations.
+
+### Day 7 verification record
+
+September 21, 2026; Node 22.23.2/npm 10.9.8, Next 15.5.25, installed headless Edge and a disposable PHP 8.2.33/MySQL 8.4.11 log-mail stack. No dependency/lockfile or backend contract changes.
+
+| Check | Result |
+| --- | --- |
+| `npm ci` | Pass; reproducible install, existing package deprecation notices |
+| `npm run lint` / `npm run typecheck` | Pass; zero lint warnings/errors, existing Next lint-command deprecation notice |
+| `npm test` | 38 passed, zero failures/skips; auth validation/error mapping, password semantics and recovery-route 401 behavior added |
+| `npm audit` / `npm audit --omit=dev` | Both zero vulnerabilities |
+| `npm run build` | Pass; standalone Next 15.5.25 output, all 17 static pages generated; build lint/type validation passes |
+| Production smoke | 13 route checks, 19 distinct JS/CSS assets and 12 hydrated auth/viewport checks pass; preview is a hard 404 and protected routes redirect to sign-in |
+| Authentication browser suite | 75 passed; real success flows and separately identified 429/500/network fault-injection cases |
+| Design-system browser suite | 127 passed, including contrast, focus, controls and responsive foundations |
+| Existing-product browser suite | 43 passed; posts/feed, likes/comments, direct/group messages, profile, notifications and four-width shell regression |
+| Backend PHPUnit | 67 passed / 560 assertions using forced in-memory SQLite; nonfatal result-cache write warning because the source mount is read-only |
+| Backend scope | All 163 pre-Day-7 source/config hashes match; Git reports no backend changes; persistent development containers/database remain untouched |
+| Cleanup | Development/production frontend processes stopped; only the `elevateu-day7` containers, network and two media volumes removed |
+
+Browser acceptance waits were corrected to await hydration and the destination form after client navigation. Existing product selectors now use the stable submitted field names because visible required markers changed label-text matching; accessible names and label associations are separately checked. Feedback focus checks are scoped to the form instead of also matching Next's route announcer. The production suite asserts the first invalid field (first name on empty signup, email elsewhere). The broader suite exposed a real tooltip focus bug: pointer departure/browser scrolling could hide keyboard-focused help. Its narrowly scoped fix keeps focused help positioned until blur or Escape. No failing test was skipped.
+
+Desktop and mobile sign-in/signup screenshots were inspected. All four auth pages fit 320/375/768/1024/1440px without horizontal overflow. Screenshots and synthetic log-mail data are kept outside Git. Expired-token rejection is also covered by the unchanged backend security suite; the browser recovery suite verifies missing, stale-session and reused links against the real API.
+
+Production verification uses `node scripts/production-smoke.mjs` against a started standalone build, with `ELEVATEU_TEST_CLIENT_URL` and the same external Playwright module/channel configuration. It checks hard preview 404s, protected redirects, auth assets and hydrated auth controls at phone/tablet/desktop widths. Stop the development server before building/running production from the same `.next` directory.

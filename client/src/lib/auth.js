@@ -15,7 +15,7 @@ export const signUp = async (user_name, first_name, last_name, email, password, 
     password,
     password_confirmation,
   } });
-  if (data?.status === 'success' && data.data?.token) {
+  if (data?.status === 'success' && data.data?.user?.id && typeof data.data?.token === 'string' && data.data.token) {
     setToken(data.data.token);
   }
   return data;
@@ -26,7 +26,7 @@ export const signIn = async (email, password) => {
     throw new Error('Email and password are required');
   }
   const data = await fetcher('/auth/login', { method: 'POST', body: { email, password } });
-  if (data?.status === 'success' && data.data?.token) {
+  if (data?.status === 'success' && data.data?.user?.id && typeof data.data?.token === 'string' && data.data.token) {
     setToken(data.data.token);
   }
   return data;

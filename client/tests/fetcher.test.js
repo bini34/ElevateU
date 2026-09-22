@@ -18,7 +18,7 @@ before(async () => {
     response.setHeader('Content-Type', 'application/json');
     if (request.url === '/api/auth/logout' && onLogout) {
       onLogout(response);
-    } else if (request.url === '/api/auth/login') {
+    } else if (request.url === '/api/auth/login' || request.url === '/api/auth/me') {
       response.writeHead(401);
       response.end(JSON.stringify({ status: 'error', message: ['Invalid credentials.'] }));
     } else if (request.url === '/api/invalid') {
@@ -112,5 +112,33 @@ test('a delayed failed logout cannot remove a new session', async () => {
     else globalThis.window = originalWindow;
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
+  }
+});
+
+test('expired session clears identity without discarding public recovery routes', async () => {
+  const previous = { window: globalThis.window, document: globalThis.document, localStorage: globalThis.localStorage };
+  let cookie = '', redirected = false, removed = false;
+  globalThis.document = {
+    get cookie() { return cookie; },
+    set cookie(value) { cookie = value.split(';')[0]; },
+  };
+  globalThis.localStorage = { removeItem: key => { if (key === 'user') removed = true; } };
+  try {
+    for (const pathname of ['/signin', '/signup', '/forget-password', '/reset-password']) {
+      globalThis.window = { location: { protocol: 'http:', pathname, assign: () => { redirected = true; } } };
+      setToken('stale-test-token');
+      await assert.rejects(fetcher('/auth/me'), error => error.status === 401);
+      assert.equal(getToken(), '');
+      assert.equal(removed, true);
+      assert.equal(redirected, false);
+    }
+    globalThis.window.location.pathname = '/chat';
+    setToken('stale-test-token');
+    await assert.rejects(fetcher('/auth/me'), error => error.status === 401);
+    assert.equal(redirected, true);
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
+    }
   }
 });

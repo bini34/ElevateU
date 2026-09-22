@@ -129,7 +129,9 @@ try {
   check(!(await page.getByRole('menu').isVisible()), 'outside click dismisses menu');
 
   const tooltipTrigger = page.getByRole('button', { name: 'About this preview' });
-  await tooltipTrigger.focus(); check(await page.getByRole('tooltip').isVisible(), 'tooltip appears on focus');
+  await tooltipTrigger.scrollIntoViewIfNeeded();
+  await tooltipTrigger.focus(); await page.getByRole('tooltip').waitFor();
+  check(await page.getByRole('tooltip').isVisible(), 'tooltip appears on focus');
   await page.keyboard.press('Escape'); check(!(await page.getByRole('tooltip').isVisible()), 'tooltip dismisses on Escape');
   await tooltipTrigger.hover(); await page.getByRole('tooltip').hover();
   check(await page.getByRole('tooltip').isVisible(), 'tooltip remains visible when hovered');

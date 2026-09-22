@@ -11,8 +11,12 @@ function GrowthArtwork() {
   </svg>;
 }
 
-export function AuthLayout({ title, description, children, footer }: { title: string; description?: string; children: ReactNode; footer?: ReactNode }) {
-  return <div className="auth-foundation"><section className="auth-brand-panel" aria-label="About ElevateU"><Brand />
-    <div><p className="text-caption font-semibold uppercase tracking-widest text-text-muted">Grow at your own pace</p><h2 className="mt-4 text-display">Small steps.<br />A better you.</h2><p className="mt-4 max-w-xs text-body-small text-text-muted">A place for progress, encouragement, and showing up for yourself.</p></div><GrowthArtwork />
-  </section><section className="auth-form-panel"><div className="w-full max-w-sm"><h1 className="text-h1">{title}</h1>{description && <p className="mt-3 text-body-small text-text-muted">{description}</p>}<div className="mt-8">{children}</div>{footer && <div className="mt-8 text-body-small text-text-muted">{footer}</div>}</div></section></div>;
+export function AuthBrandPanel() {
+  return <section className="auth-brand-panel" aria-label="About ElevateU"><Brand />
+    <div className="auth-brand-copy"><p className="text-caption font-semibold uppercase tracking-widest text-text-muted">Grow at your own pace</p><h2 className="mt-4 text-display">Small steps.<br />A better you.</h2><p className="mt-4 max-w-xs text-body-small text-text-muted">A place for progress, encouragement, and showing up for yourself.</p><p className="mt-6 text-label">Find your community.<br />Share encouragement.<br />Make space for growth.</p></div><GrowthArtwork />
+  </section>;
+}
+
+export function AuthLayout({ title, description, children, footer, headerAction }: { title: string; description?: string; children: ReactNode; footer?: ReactNode; headerAction?: ReactNode }) {
+  return <div className="auth-foundation"><AuthBrandPanel /><section className="auth-form-panel"><div className="w-full max-w-sm">{headerAction && <div className="mb-8 text-body-small text-text-muted">{headerAction}</div>}<h1 className="text-h1">{title}</h1>{description && <p className="mt-3 text-body-small text-text-muted">{description}</p>}<div className="mt-8">{children}</div>{footer && <div className="mt-8 text-body-small text-text-muted">{footer}</div>}</div></section></div>;
 }

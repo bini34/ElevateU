@@ -1,6 +1,6 @@
 # ElevateU development plan
 
-Baseline: audit/stabilization on September 17, security on September 18, dependency/runtime hardening on September 19, and database rehearsal/constraints on September 20, 2026. The 30 iterations include Days 1–6; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
+Baseline: audit/stabilization on September 17, security on September 18, dependency/runtime hardening on September 19, database rehearsal/constraints on September 20, and UI foundation/authentication adoption on September 20–21, 2026. The 30 iterations include Days 1–7; they are ordered development slices, not promises of equal duration. Reassess scope after each acceptance gate. No major product features were added in these iterations.
 
 Day 2 implemented transactional authentication/revocation, authorization coverage, private attachments, OAuth shutdown and rate limits. Day 3 moved to Laravel 12, cleared reported dependency advisories, restored allowlisted image optimization and pinned runtimes. Day 4 established fixtures, preflight and synthetic MySQL restore evidence. Day 5 adds three safe constraint migrations and narrow conflict recovery, including concurrent first-message idempotency; 50 data checks and schema inspection now distinguish migration blockers. Historical migrations and persistent data remain untouched. See [the database runbook](docs/DATABASE.md), [dependency review](docs/DEPENDENCIES.md) and [security report](docs/SECURITY.md). Day 6 implements the product design system and UI foundation: semantic tokens, typed primitives, a responsive shell, presentational streak/progress components and a development-only preview. Backend/domain behavior is unchanged. See [the design-system guide](docs/DESIGN_SYSTEM.md).
 
@@ -47,8 +47,8 @@ API names, database columns and analytics formulas should be agreed and tested i
 
 | Feature | Current implementation and evidence boundary |
 | --- | --- |
-| Register/login/logout | Password routes, Passport tokens, profile creation and revocation exist; integration coverage recorded in audit |
-| Password recovery/change | Broker, log-mail tests and revocation exist; live mail delivery unverified |
+| Register/login/logout | Passport/profile/revocation contracts preserved; Day 7 adds shared accessible forms, safe errors and verified-session routing; real browser flows pass |
+| Password recovery/change | Day 7 forgot/reset UI and real log-mail recovery/reuse/revocation tests pass; change-password settings unchanged; live mail delivery unverified |
 | Feed | Posts, attachments, pagination/search, likes, comments, ownership checks and edit/delete paths exist |
 | Profile | Username page, profile edit and avatar upload exist; authenticated API even where UI suggests public |
 | Direct chat | Participant checks, text/media, history, read receipts, typing/presence, canonical conversation uniqueness and concurrent first-message idempotency are verified |
@@ -63,7 +63,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 - Group deep links rely on selected client state for header data; group search and some controls are unfinished; existing subscriptions may outlive membership removal.
 - Messaging retries/reconnects need concurrent idempotency, missed-page reconciliation, conversation uniqueness and live socket revocation. Private attachment authorization is implemented; legacy storage rollout remains a deployment gate.
 - Notifications need race-aware badge/list reconciliation and retryable error states; loading or mutation failure must not appear as success.
-- Forms, modals and navigation need accessible keyboard/focus/error behavior and actual mobile/zoom testing.
+- Legacy forms, modals and navigation still need adoption; Day 7 auth now has browser-tested keyboard/focus/error behavior. Actual mobile keyboards and assistive-technology testing remain manual gates.
 - Search/discovery, profile visibility and exposed personal fields need explicit product/privacy decisions.
 - Day 4 repaired factory relationships and removed conversation-factory loop risks. Keep demo seeding isolated and serial; it is insert-only/idempotent for its known records, not a concurrent production data repair tool.
 
@@ -77,7 +77,7 @@ API names, database columns and analytics formulas should be agreed and tested i
 | 4 | Database integrity, fixtures and MySQL 8.4 rehearsal — implemented | 46 read-only checks; guarded valid fixtures; all historical migrations and synthetic restore verified; missing constraints designed; actual MySQL conversation/membership races recorded honestly |
 | 5 | Safe integrity constraints and concurrent conflict handling — implemented | Profile/membership/canonical pair keys and self CHECK; 12 deterministic races per MySQL run; dirty refusal and clean migration/rollback/restore evidence; target-retention constraints deferred |
 | 6 | Product design system and UI foundation — implemented | Semantic tokens, typed accessible primitives, connected responsive shell, presentation-only streak/progress, auth layout foundation, development-only preview and focused tests; legacy page adoption remains |
-| 7 | Authentication UI adoption | Reuse AuthLayout and fields for sign-in, registration and recovery; preserve Passport APIs; keyboard, validation, loading/error and mobile flows pass |
+| 7 | Authentication experience redesign — implemented | Shared auth shell/forms, safe field errors, password controls, verified-session redirects and neutral recovery; 38 frontend tests, 75 auth/127 foundation/43 product browser checks; production smoke passes; Passport/backend unchanged |
 | 8 | Goal domain design and minimal persistence | Agree lifecycle, measurable units, visibility and timezone rules; ownership, validation and safe migrations before UI |
 | 9 | Goal creation and management UI | Create/view/edit/archive with real persistence; reuse design primitives and test mobile validation/error states |
 | 10 | Milestone domain and UI | Ordered measurable milestones belong to goals; completion/edit rules and ownership covered end to end |
@@ -104,7 +104,9 @@ API names, database columns and analytics formulas should be agreed and tested i
 
 Each iteration should produce a narrow reviewable change, meaningful tests, updated documentation and an explicit list of remaining risks. Do not carry a failing baseline forward without recording it.
 
-Day 4 evidence moved integrity constraints ahead of new domains; Day 5 now implements and rehearses them. Earlier API/state work remains incorporated into iteration 14 and feature acceptance gates. Actual-data deployment may need a separate window. Day 6 now provides the UI foundation. The next controlled UI iteration is auth adoption (Day 7); it has not started. Goal design moves to Day 8, followed by goal UI and milestones. The progress/check-in slice combines the former domain/UI entries to retain 30 planning slots; reassess scope rather than weakening its acceptance gate. Later feature iterations migrate their existing social screens onto the shared system.
+Day 4 evidence moved integrity constraints ahead of new domains; Day 5 implements and rehearses them. Earlier API/state work remains incorporated into iteration 14 and feature acceptance gates. Actual-data deployment may need a separate window. Day 6 provides the UI foundation and Day 7 migrates authentication and recovery onto it. Goal design remains Day 8, followed by goal UI and milestones. Day 8 has not started. The progress/check-in slice combines the former domain/UI entries to retain 30 planning slots; reassess scope rather than weakening its acceptance gate. Later feature iterations migrate their existing social screens onto the shared system.
+
+Day 7 preserves Passport/token storage, backend contracts and database structure. It adds no OAuth, fake legal agreement, remember-me behavior or unsupported onboarding. Future onboarding needs persisted goal/interest/community contracts, visibility decisions and resumable server-side state before exposing a completion flow. Remaining authentication risks include JavaScript-readable bearer tokens, production mail/delivery configuration and manual assistive-technology/device verification. See [authentication conventions and evidence](docs/DESIGN_SYSTEM.md#authentication-experience-day-7).
 
 ## 7. Technical risks
 
